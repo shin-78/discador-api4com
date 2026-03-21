@@ -140,35 +140,46 @@ def state():
 @app.route("/webhook", methods=["POST"])
 def webhook():
     """
-    Recebe eventos em tempo real da Api4Com.
-    Configurar no painel: app.api4com.com → Integrações → Webhook
+    Recebe eventos em tempo real da Api4Com v1.4.
+    Campos reais: called, eventType, hangupCause, duration, metadata
     """
     try:
         data = request.get_json(silent=True) or {}
         logger.info(f"Webhook recebido: {data}")
 
-        # Extrai campos — Api4Com v1.4 envia em português
-        phone      = data.get("to") or data.get("phone") or data.get("numero") or ""
-        cause      = data.get("hangup_cause") or data.get("causa") or data.get("status") or ""
-        duration   = int(data.get("duration") or data.get("duracao") or 0)
-        lead_name  = ""
+        event_type = data.get("eventType", "")
 
-        # Tenta pegar nome do lead pelo metadata
+        # Só processa eventos de fim de chamada
+        # channel-answer = atendeu, channel-hangup = desligou
+        if event_type not in ("channel-answer", "channel-hangup"):
+            return jsonify({"ok": True, "ignored": True, "event": event_type})
+
+        # Campos reais da Api4Com v1.4
+        phone     = data.get("called") or data.get("to") or data.get("phone") or ""
+        cause     = data.get("hangupCause") or data.get("hangup_cause") or ""
+        duration  = int(data.get("duration") or 0)
+
+        # Metadata com nome do lead
         meta = data.get("metadata") or {}
-        if isinstance(meta, dict):
-            lead_name = meta.get("lead_name", "")
+        if isinstance(meta, str):
+            import json as _json
+            try: meta = _json.loads(meta)
+            except: meta = {}
+        lead_name = meta.get("lead_name", "") if isinstance(meta, dict) else ""
 
-        # Normaliza status
-        status = _cause_to_status(cause) if cause else None
-        if duration > 0:
+        # Determina status
+        if event_type == "channel-answer":
             status = "answered"
+        elif duration > 0:
+            status = "answered"
+        else:
+            status = _cause_to_status(cause)
 
-        if not status or not phone:
-            return jsonify({"ok": True, "ignored": True})
-
-        # Atualiza resultado na campanha em tempo real
         phone_clean = _fmt_phone(phone)
+        logger.info(f"Webhook processado: {event_type} | {lead_name} | {phone_clean} | {status}")
+
         with campaign_lock:
+            # Atualiza linha na tabela
             for r in reversed(campaign["results"]):
                 if _fmt_phone(r.get("phone", "")) == phone_clean and r["status"] == "discando":
                     r["status"] = status
@@ -176,19 +187,19 @@ def webhook():
                         lead_name = r.get("name", "")
                     break
 
-            # Atualiza stats
-            if status in campaign["stats"]:
+            # Stats (só no hangup para não duplicar)
+            if event_type == "channel-hangup":
                 campaign["stats"][status] = campaign["stats"].get(status, 0) + 1
                 campaign["stats"]["total"] = campaign["stats"].get("total", 0) + 1
 
-            # Se atendeu — marca como atendido no dashboard imediatamente
+            # Marca atendido e pausa discagem
             if status == "answered" and not campaign["answered"]:
                 campaign["answered"] = {
                     "name":  lead_name or phone_clean,
                     "phone": phone_clean,
                 }
                 campaign["paused"] = True
-                logger.info(f"WEBHOOK: Atendido! {lead_name} {phone_clean}")
+                logger.info(f"ATENDIDO via webhook: {lead_name} {phone_clean}")
 
         return jsonify({"ok": True, "status": status, "phone": phone_clean})
 
