@@ -1,1 +1,455 @@
 
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Discador Api4Com</title>
+<style>
+:root {
+  --bg:       #0a0f1e;
+  --surface:  #111827;
+  --border:   #1f2937;
+  --text:     #f1f5f9;
+  --muted:    #6b7280;
+  --green:    #22c55e;
+  --green-bg: #052e16;
+  --blue:     #3b82f6;
+  --blue-bg:  #0f172a;
+  --purple:   #a78bfa;
+  --red:      #ef4444;
+  --orange:   #f97316;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── Header ── */
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.header-left { display: flex; align-items: center; gap: 12px; }
+.logo { font-size: 1.1rem; font-weight: 700; letter-spacing: -.02em; }
+.logo span { color: var(--green); }
+.badge { background: var(--border); color: var(--muted); padding: 3px 10px; border-radius: 20px; font-size: .75rem; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.status-dot.online { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* ── Layout ── */
+.main { padding: 28px 32px; max-width: 1200px; margin: 0 auto; }
+.grid-2 { display: grid; grid-template-columns: 360px 1fr; gap: 20px; }
+@media(max-width:900px){ .grid-2 { grid-template-columns: 1fr; } }
+
+/* ── Cards ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+.card-title {
+  font-size: .7rem; text-transform: uppercase; letter-spacing: .1em;
+  color: var(--muted); margin-bottom: 16px;
+}
+
+/* ── Upload ── */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  padding: 32px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: .2s;
+}
+.upload-zone:hover, .upload-zone.drag { border-color: var(--blue); background: rgba(59,130,246,.05); }
+.upload-zone .icon { font-size: 2rem; margin-bottom: 8px; }
+.upload-zone p { color: var(--muted); font-size: .85rem; margin-top: 4px; }
+.upload-zone strong { color: var(--text); }
+#fileInput { display: none; }
+
+.file-info {
+  display: none;
+  background: rgba(34,197,94,.08);
+  border: 1px solid rgba(34,197,94,.2);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 12px;
+  font-size: .85rem;
+}
+.file-info .fname { font-weight: 600; color: var(--green); }
+.file-info .fcount { color: var(--muted); margin-top: 2px; }
+
+/* ── Botões ── */
+.btn {
+  width: 100%; padding: 12px;
+  border: none; border-radius: 8px;
+  font-size: .9rem; font-weight: 600;
+  cursor: pointer; transition: .15s;
+  margin-top: 10px;
+}
+.btn-green  { background: var(--green); color: #000; }
+.btn-green:hover { background: #16a34a; }
+.btn-red    { background: #7f1d1d; color: #fca5a5; }
+.btn-red:hover { background: #991b1b; }
+.btn-blue   { background: #1e3a5f; color: #93c5fd; }
+.btn-blue:hover { background: #1e40af; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ── Paralelo ── */
+.range-row { display:flex; align-items:center; gap:10px; margin-top:14px; }
+.range-row label { font-size:.8rem; color:var(--muted); white-space:nowrap; }
+.range-row input[type=range] { flex:1; accent-color:var(--blue); }
+.range-row .val { font-size:.85rem; font-weight:600; color:var(--blue); min-width:20px; }
+
+/* ── Alert de atendimento ── */
+.alert-answered {
+  display: none;
+  background: var(--green-bg);
+  border: 2px solid var(--green);
+  border-radius: 12px;
+  padding: 24px 28px;
+  margin-bottom: 20px;
+  animation: fadeIn .4s;
+}
+.alert-answered.show { display: block; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:none} }
+.alert-answered .a-label { font-size:.7rem; text-transform:uppercase; letter-spacing:.1em; color:#16a34a; }
+.alert-answered .a-name  { font-size:1.8rem; font-weight:800; color:var(--green); margin: 4px 0; }
+.alert-answered .a-phone { color:#86efac; font-size:1rem; font-family:monospace; }
+.alert-answered .a-ramal { display:inline-block; background:#166534; color:var(--green); padding:5px 14px; border-radius:6px; font-size:.85rem; margin-top:10px; }
+
+/* ── Stats ── */
+.stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:20px; }
+.stat-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px; text-align:center; }
+.stat-card .sv { font-size:1.6rem; font-weight:700; }
+.stat-card .sl { font-size:.7rem; color:var(--muted); margin-top:2px; }
+.stat-card.green .sv { color:var(--green); }
+.stat-card.blue  .sv { color:var(--blue); }
+.stat-card.purple.sv { color:var(--purple); }
+.stat-card.gray  .sv { color:var(--muted); }
+
+/* ── Status badge ── */
+.status-bar {
+  display:flex; align-items:center; gap:10px;
+  background:var(--border); border-radius:8px;
+  padding:10px 14px; margin-bottom:16px; font-size:.85rem;
+}
+.status-bar .s-icon { font-size:1.1rem; }
+.status-bar .s-text { color:var(--muted); }
+.status-bar .s-lead { font-weight:600; color:var(--text); }
+.status-bar.discando { border-left:3px solid var(--blue); }
+.status-bar.atendido  { border-left:3px solid var(--green); background:var(--green-bg); }
+.status-bar.pausado   { border-left:3px solid var(--orange); }
+
+/* ── Tabela ── */
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:.82rem; }
+th { text-align:left; color:var(--muted); font-weight:500; padding:8px 12px; border-bottom:1px solid var(--border); font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; }
+td { padding:10px 12px; border-bottom:1px solid rgba(31,41,55,.6); }
+tr:last-child td { border-bottom:none; }
+.empty-row td { color:var(--muted); text-align:center; padding:32px; }
+
+.tag {
+  display:inline-block; padding:2px 8px; border-radius:4px;
+  font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em;
+}
+.tag-answered  { background:rgba(34,197,94,.12);  color:var(--green); }
+.tag-cancelled { background:rgba(107,114,128,.15); color:var(--muted); }
+.tag-voicemail { background:rgba(167,139,250,.12); color:var(--purple); }
+.tag-invalid   { background:rgba(239,68,68,.12);   color:var(--red); }
+.tag-error     { background:rgba(249,115,22,.12);  color:var(--orange); }
+.tag-discando  { background:rgba(59,130,246,.12);  color:var(--blue); }
+
+/* ── Progress ── */
+.progress-wrap { margin-bottom:16px; }
+.progress-label { display:flex; justify-content:space-between; font-size:.78rem; color:var(--muted); margin-bottom:6px; }
+.progress-bar { height:4px; background:var(--border); border-radius:4px; overflow:hidden; }
+.progress-fill { height:100%; background:var(--blue); border-radius:4px; transition:width .5s; }
+
+/* ── Current dialing ── */
+.dialing-list { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px; min-height:28px; }
+.dialing-chip {
+  background:rgba(59,130,246,.12); border:1px solid rgba(59,130,246,.2);
+  color:var(--blue); padding:3px 10px; border-radius:20px; font-size:.78rem;
+  animation: chipIn .2s;
+}
+@keyframes chipIn { from{opacity:0;transform:scale(.9)} to{opacity:1;transform:none} }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <div class="status-dot" id="onlineDot"></div>
+    <div class="logo">Discador <span>Api4Com</span></div>
+    <span class="badge">Ramal {{ ramal }}</span>
+  </div>
+  <span class="badge" id="headerStatus">Aguardando</span>
+</div>
+
+<div class="main">
+
+  <!-- Alerta de atendimento -->
+  <div class="alert-answered" id="alertAnswered">
+    <div class="a-label">✅ Chamada Atendida</div>
+    <div class="a-name" id="alertName">—</div>
+    <div class="a-phone" id="alertPhone">—</div>
+    <div class="a-ramal">📞 Ramal {{ ramal }} conectado</div>
+  </div>
+
+  <div class="grid-2">
+
+    <!-- Coluna esquerda: controles -->
+    <div>
+      <div class="card">
+        <div class="card-title">Lista de leads</div>
+
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+          <div class="icon">📋</div>
+          <strong>Clique para selecionar</strong>
+          <p>ou arraste seu arquivo aqui</p>
+          <p style="margin-top:8px;font-size:.75rem;">CSV ou Excel (.xlsx)</p>
+        </div>
+        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
+
+        <div class="file-info" id="fileInfo">
+          <div class="fname" id="fileName">—</div>
+          <div class="fcount" id="fileCount">—</div>
+        </div>
+
+        <div class="range-row">
+          <label>Leads em paralelo:</label>
+          <input type="range" id="paralelo" min="1" max="10" value="3"
+                 oninput="document.getElementById('parVal').textContent=this.value">
+          <span class="val" id="parVal">3</span>
+        </div>
+
+        <button class="btn btn-green" id="btnStart" onclick="startCampaign()" disabled>
+          ▶ Iniciar discagem
+        </button>
+        <button class="btn btn-blue" id="btnResume" onclick="resumeCampaign()" style="display:none">
+          ▶ Retomar após atendimento
+        </button>
+        <button class="btn btn-red" id="btnStop" onclick="stopCampaign()" style="display:none">
+          ■ Parar campanha
+        </button>
+      </div>
+    </div>
+
+    <!-- Coluna direita: dashboard -->
+    <div>
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card green">
+          <div class="sv" id="statAnswered">0</div>
+          <div class="sl">Atendidas</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="sv" id="statCancelled">0</div>
+          <div class="sl">Não atendeu</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="sv" id="statVoicemail">0</div>
+          <div class="sl">Caixa postal</div>
+        </div>
+        <div class="stat-card gray">
+          <div class="sv" id="statTotal">0</div>
+          <div class="sl">Total</div>
+        </div>
+      </div>
+
+      <!-- Status + progresso -->
+      <div class="status-bar" id="statusBar">
+        <span class="s-icon">⏳</span>
+        <span class="s-text">Aguardando lista...</span>
+      </div>
+
+      <div class="progress-wrap" id="progressWrap" style="display:none">
+        <div class="progress-label">
+          <span>Progresso</span>
+          <span id="progressText">0 / 0</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Discando agora -->
+      <div class="dialing-list" id="dialingList"></div>
+
+      <!-- Tabela de chamadas -->
+      <div class="card">
+        <div class="card-title">Chamadas recentes</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Lead</th>
+                <th>Número</th>
+                <th>Status</th>
+                <th>Horário</th>
+              </tr>
+            </thead>
+            <tbody id="callsTable">
+              <tr class="empty-row"><td colspan="4">Nenhuma chamada ainda</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+let pollInterval = null;
+let lastAnswered = null;
+
+// ── Upload ────────────────────────────────────────────────────────────────────
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag'); handleFile(e.dataTransfer.files[0]); });
+document.getElementById('fileInput').addEventListener('change', e => handleFile(e.target.files[0]));
+
+async function handleFile(file) {
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
+
+  zone.innerHTML = '<div class="icon">⏳</div><strong>Processando...</strong>';
+
+  const r = await fetch('/api/upload', { method: 'POST', body: fd });
+  const data = await r.json();
+
+  if (data.error) {
+    zone.innerHTML = `<div class="icon">❌</div><strong>${data.error}</strong>`;
+    return;
+  }
+
+  zone.innerHTML = '<div class="icon">✅</div><strong>Arquivo carregado</strong><p>Clique para trocar</p>';
+  document.getElementById('fileInfo').style.display = 'block';
+  document.getElementById('fileName').textContent = file.name;
+  document.getElementById('fileCount').textContent = `${data.total} leads encontrados`;
+  document.getElementById('btnStart').disabled = false;
+}
+
+// ── Controles ─────────────────────────────────────────────────────────────────
+async function startCampaign() {
+  await fetch('/api/start', { method: 'POST' });
+  document.getElementById('btnStart').style.display = 'none';
+  document.getElementById('btnStop').style.display = 'block';
+  document.getElementById('progressWrap').style.display = 'block';
+  startPolling();
+}
+
+async function stopCampaign() {
+  await fetch('/api/stop', { method: 'POST' });
+  document.getElementById('btnStop').style.display = 'none';
+  document.getElementById('btnResume').style.display = 'none';
+  document.getElementById('btnStart').style.display = 'block';
+}
+
+async function resumeCampaign() {
+  await fetch('/api/resume', { method: 'POST' });
+  document.getElementById('btnResume').style.display = 'none';
+  document.getElementById('alertAnswered').classList.remove('show');
+  lastAnswered = null;
+}
+
+// ── Polling ───────────────────────────────────────────────────────────────────
+function startPolling() {
+  if (pollInterval) clearInterval(pollInterval);
+  pollInterval = setInterval(poll, 3000);
+  poll();
+}
+
+async function poll() {
+  try {
+    const r = await fetch('/api/state');
+    const d = await r.json();
+    updateUI(d);
+  } catch(e) {
+    setStatusBar('error', '⚠️', 'Sem conexão com o servidor');
+  }
+}
+
+function updateUI(d) {
+  // Stats
+  document.getElementById('statAnswered').textContent  = d.stats.answered  || 0;
+  document.getElementById('statCancelled').textContent = d.stats.cancelled || 0;
+  document.getElementById('statVoicemail').textContent = d.stats.voicemail || 0;
+  document.getElementById('statTotal').textContent     = d.stats.total     || 0;
+
+  // Online dot
+  const dot = document.getElementById('onlineDot');
+  dot.className = 'status-dot ' + (d.status !== 'aguardando' ? 'online' : '');
+
+  // Header status
+  const labels = { aguardando:'Aguardando', discando:'Discando...', atendido:'Atendido!', pausado:'Pausado' };
+  document.getElementById('headerStatus').textContent = labels[d.status] || d.status;
+
+  // Status bar
+  const bar = document.getElementById('statusBar');
+  bar.className = 'status-bar ' + d.status;
+  if (d.status === 'discando') {
+    bar.innerHTML = `<span class="s-icon">📞</span><span class="s-text">Discando...</span>`;
+  } else if (d.status === 'atendido') {
+    bar.innerHTML = `<span class="s-icon">✅</span><span class="s-text">Atendido — </span><span class="s-lead">${d.answered?.name}</span>`;
+  } else if (d.status === 'pausado') {
+    bar.innerHTML = `<span class="s-icon">⏸</span><span class="s-text">Pausado — aguardando fim da ligação</span>`;
+  } else {
+    bar.innerHTML = `<span class="s-icon">⏳</span><span class="s-text">Aguardando...</span>`;
+  }
+
+  // Progresso
+  if (d.total > 0) {
+    const done = d.total - d.remaining;
+    const pct  = Math.round((done / d.total) * 100);
+    document.getElementById('progressText').textContent = `${done} / ${d.total}`;
+    document.getElementById('progressFill').style.width = pct + '%';
+  }
+
+  // Chips de discando agora
+  const dl = document.getElementById('dialingList');
+  dl.innerHTML = (d.current || []).map(n => `<div class="dialing-chip">📞 ${n}</div>`).join('');
+
+  // Alerta de atendimento
+  if (d.answered && d.answered.name !== lastAnswered) {
+    lastAnswered = d.answered.name;
+    document.getElementById('alertName').textContent  = d.answered.name;
+    document.getElementById('alertPhone').textContent = d.answered.phone;
+    document.getElementById('alertAnswered').classList.add('show');
+    document.getElementById('btnResume').style.display = 'block';
+    // Som de notificação
+    try { new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAA...').play(); } catch(e) {}
+  }
+
+  // Tabela
+  const tbody = document.getElementById('callsTable');
+  if (!d.results || d.results.length === 0) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">Nenhuma chamada ainda</td></tr>';
+    return;
+  }
+  tbody.innerHTML = [...d.results].reverse().slice(0,50).map(c => `
+    <tr>
+      <td style="font-weight:500">${c.name}</td>
+      <td style="font-family:monospace;color:var(--muted)">${c.phone}</td>
+      <td><span class="tag tag-${c.status}">${c.status}</span></td>
+      <td style="color:var(--muted);font-size:.78rem">${c.ts}</td>
+    </tr>
+  `).join('');
+}
+
+// Inicia polling imediatamente para ver o estado
+startPolling();
+</script>
+</body>
+</html>
