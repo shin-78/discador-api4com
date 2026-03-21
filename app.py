@@ -134,6 +134,73 @@ def state():
         })
 
 
+
+
+# ── Webhook da Api4Com ────────────────────────────────────────────────────────
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    """
+    Recebe eventos em tempo real da Api4Com.
+    Configurar no painel: app.api4com.com → Integrações → Webhook
+    """
+    try:
+        data = request.get_json(silent=True) or {}
+        logger.info(f"Webhook recebido: {data}")
+
+        # Extrai campos — Api4Com v1.4 envia em português
+        phone      = data.get("to") or data.get("phone") or data.get("numero") or ""
+        cause      = data.get("hangup_cause") or data.get("causa") or data.get("status") or ""
+        duration   = int(data.get("duration") or data.get("duracao") or 0)
+        lead_name  = ""
+
+        # Tenta pegar nome do lead pelo metadata
+        meta = data.get("metadata") or {}
+        if isinstance(meta, dict):
+            lead_name = meta.get("lead_name", "")
+
+        # Normaliza status
+        status = _cause_to_status(cause) if cause else None
+        if duration > 0:
+            status = "answered"
+
+        if not status or not phone:
+            return jsonify({"ok": True, "ignored": True})
+
+        # Atualiza resultado na campanha em tempo real
+        phone_clean = _fmt_phone(phone)
+        with campaign_lock:
+            for r in reversed(campaign["results"]):
+                if _fmt_phone(r.get("phone", "")) == phone_clean and r["status"] == "discando":
+                    r["status"] = status
+                    if not lead_name:
+                        lead_name = r.get("name", "")
+                    break
+
+            # Atualiza stats
+            if status in campaign["stats"]:
+                campaign["stats"][status] = campaign["stats"].get(status, 0) + 1
+                campaign["stats"]["total"] = campaign["stats"].get("total", 0) + 1
+
+            # Se atendeu — marca como atendido no dashboard imediatamente
+            if status == "answered" and not campaign["answered"]:
+                campaign["answered"] = {
+                    "name":  lead_name or phone_clean,
+                    "phone": phone_clean,
+                }
+                campaign["paused"] = True
+                logger.info(f"WEBHOOK: Atendido! {lead_name} {phone_clean}")
+
+        return jsonify({"ok": True, "status": status, "phone": phone_clean})
+
+    except Exception as e:
+        logger.error(f"Erro no webhook: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/webhook", methods=["GET"])
+def webhook_health():
+    return jsonify({"ok": True, "message": "Webhook endpoint ativo"})
+
 # ── Motor de discagem ─────────────────────────────────────────────────────────
 def _run_campaign():
     leads = [l for l in campaign["leads"] if not l.get("done")]
