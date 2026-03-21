@@ -78,10 +78,15 @@ def upload():
 # ── API: iniciar campanha ─────────────────────────────────────────────────────
 @app.route("/api/start", methods=["POST"])
 def start():
+    global MAX_PARALLEL
     if not campaign["leads"]:
         return jsonify({"error": "Carregue uma planilha primeiro"}), 400
     if campaign["running"]:
         return jsonify({"error": "Campanha já está rodando"}), 400
+
+    data = request.get_json(silent=True) or {}
+    if "paralelo" in data:
+        MAX_PARALLEL = int(data["paralelo"])
 
     campaign["running"] = True
     campaign["paused"]  = False
@@ -89,7 +94,7 @@ def start():
 
     t = threading.Thread(target=_run_campaign, daemon=True)
     t.start()
-    return jsonify({"ok": True})
+    return jsonify({"ok": True, "paralelo": MAX_PARALLEL})
 
 
 # ── API: pausar / retomar ─────────────────────────────────────────────────────
@@ -242,18 +247,28 @@ def _wait_result(phone: str, name: str, call_id: str) -> str:
 
 
 def _cause_to_status(cause: str) -> str:
+    # Api4Com retorna em inglês via API e em português no painel
     mapping = {
-        "NORMAL_CLEARING":    "answered",
-        "ORIGINATOR_CANCEL":  "cancelled",
-        "NO_ANSWER":          "cancelled",
-        "USER_BUSY":          "cancelled",
-        "CALL_REJECTED":      "cancelled",
-        "SUBSCRIBER_ABSENT":  "cancelled",
-        "VOICEMAIL":          "voicemail",
-        "UNALLOCATED_NUMBER": "invalid",
+        # Inglês (via API)
+        "NORMAL_CLEARING":       "answered",
+        "ORIGINATOR_CANCEL":     "cancelled",
+        "NO_ANSWER":             "cancelled",
+        "USER_BUSY":             "cancelled",
+        "CALL_REJECTED":         "cancelled",
+        "SUBSCRIBER_ABSENT":     "cancelled",
+        "VOICEMAIL":             "voicemail",
+        "UNALLOCATED_NUMBER":    "invalid",
         "INVALID_NUMBER_FORMAT": "invalid",
+        "USER_NOT_REGISTERED":   "invalid",
+        # Português (painel Api4Com)
+        "ATENDIDA":              "answered",
+        "CANCELADA":             "cancelled",
+        "CAIXA POSTAL":          "voicemail",
+        "NAO FOI POSSIVEL COMPLETAR": "invalid",
+        "NAO FOI POSSIVEL":      "invalid",
+        "NUMERO INVALIDO":       "invalid",
     }
-    return mapping.get(cause, "cancelled")
+    return mapping.get(cause.upper().strip(), "cancelled")
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
