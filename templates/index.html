@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -311,6 +310,21 @@ tr:last-child td { border-bottom:none; }
 <script>
 let pollInterval = null;
 let lastAnswered = null;
+let titleInterval = null;
+
+function flashTitle(name) {
+  let toggle = true;
+  clearInterval(titleInterval);
+  titleInterval = setInterval(() => {
+    document.title = toggle ? `✅ ATENDEU — ${name}` : '📞 Discador Api4Com';
+    toggle = !toggle;
+  }, 700);
+}
+
+function stopFlash() {
+  clearInterval(titleInterval);
+  document.title = 'Discador Api4Com';
+}
 
 // ── Upload ────────────────────────────────────────────────────────────────────
 const zone = document.getElementById('uploadZone');
@@ -362,6 +376,7 @@ async function resumeCampaign() {
   document.getElementById('btnResume').style.display = 'none';
   document.getElementById('alertAnswered').classList.remove('show');
   lastAnswered = null;
+  stopFlash();
 }
 
 // ── Polling ───────────────────────────────────────────────────────────────────
@@ -428,8 +443,26 @@ function updateUI(d) {
     document.getElementById('alertPhone').textContent = d.answered.phone;
     document.getElementById('alertAnswered').classList.add('show');
     document.getElementById('btnResume').style.display = 'block';
-    // Som de notificação
-    try { new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAA...').play(); } catch(e) {}
+    // Som de alerta — toca 3 vezes para não passar despercebido
+    function playAlert() {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [0, 400, 800].forEach(delay => {
+        setTimeout(() => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.value = 880;
+          osc.type = 'sine';
+          gain.gain.setValueAtTime(1, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+          osc.start(ctx.currentTime);
+          osc.stop(ctx.currentTime + 0.3);
+        }, delay);
+      });
+    }
+    try { playAlert(); } catch(e) {}
+    flashTitle(d.answered.name);
   }
 
   // Tabela
