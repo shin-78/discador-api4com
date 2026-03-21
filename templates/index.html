@@ -357,7 +357,8 @@ async function handleFile(file) {
 
 // ── Controles ─────────────────────────────────────────────────────────────────
 async function startCampaign() {
-  await fetch('/api/start', { method: 'POST' });
+  const paralelo = document.getElementById('paralelo').value;
+  await fetch('/api/start', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({paralelo: parseInt(paralelo)}) });
   document.getElementById('btnStart').style.display = 'none';
   document.getElementById('btnStop').style.display = 'block';
   document.getElementById('progressWrap').style.display = 'block';
