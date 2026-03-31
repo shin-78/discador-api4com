@@ -15,6 +15,7 @@ API_TOKEN    = os.getenv("API4COM_TOKEN", "")
 API_BASE     = "https://api.api4com.com/api/v1"
 RAMAL        = os.getenv("RAMAL", "1005")
 MAX_PARALLEL = int(os.getenv("MAX_PARALLEL", "3"))
+CALL_DELAY   = float(os.getenv("CALL_DELAY", "0.5"))  # cooldown entre chamadas/lotes
 
 HEADERS = {
     "Authorization": API_TOKEN,
@@ -70,37 +71,55 @@ def upload():
         campaign["stats"]   = {"answered": 0, "cancelled": 0, "voicemail": 0, "invalid": 0, "total": 0}
         campaign["answered"] = None
         campaign["running"]  = False
+        campaign["paused"]   = False
+        campaign["current"]  = []
 
-    return jsonify({"ok": True, "total": len(leads),
-                    "preview": [{"name": l["name"], "phones": len(l["phones"])} for l in leads[:5]]})
+    return jsonify({
+        "ok": True,
+        "total": len(leads),
+        "preview": [{"name": l["name"], "phones": len(l["phones"])} for l in leads[:5]]
+    })
 
 
 # ── API: iniciar campanha ─────────────────────────────────────────────────────
 @app.route("/api/start", methods=["POST"])
 def start():
-    global MAX_PARALLEL
+    global MAX_PARALLEL, CALL_DELAY
+
     if not campaign["leads"]:
         return jsonify({"error": "Carregue uma planilha primeiro"}), 400
     if campaign["running"]:
         return jsonify({"error": "Campanha já está rodando"}), 400
 
     data = request.get_json(silent=True) or {}
+
     if "paralelo" in data:
         MAX_PARALLEL = int(data["paralelo"])
 
+    if "call_delay" in data:
+        try:
+            CALL_DELAY = max(0.0, float(data["call_delay"]))
+        except Exception:
+            return jsonify({"error": "call_delay inválido"}), 400
+
     campaign["running"] = True
-    campaign["paused"]  = False
+    campaign["paused"] = False
     campaign["answered"] = None
 
     t = threading.Thread(target=_run_campaign, daemon=True)
     t.start()
-    return jsonify({"ok": True, "paralelo": MAX_PARALLEL})
+
+    return jsonify({
+        "ok": True,
+        "paralelo": MAX_PARALLEL,
+        "call_delay": CALL_DELAY
+    })
 
 
-# ── API: pausar / retomar ─────────────────────────────────────────────────────
+# ── API: pausar / retomar / parar ─────────────────────────────────────────────
 @app.route("/api/resume", methods=["POST"])
 def resume():
-    campaign["paused"]  = False
+    campaign["paused"] = False
     campaign["answered"] = None
     return jsonify({"ok": True})
 
@@ -108,7 +127,9 @@ def resume():
 @app.route("/api/stop", methods=["POST"])
 def stop():
     campaign["running"] = False
-    campaign["paused"]  = False
+    campaign["paused"] = False
+    campaign["answered"] = None
+    campaign["current"] = []
     return jsonify({"ok": True})
 
 
@@ -124,16 +145,16 @@ def state():
             "aguardando"
         )
         return jsonify({
-            "status":    status,
-            "answered":  answered,
-            "current":   campaign["current"],
-            "stats":     campaign["stats"],
-            "results":   campaign["results"][-50:],
+            "status": status,
+            "answered": answered,
+            "current": campaign["current"],
+            "stats": campaign["stats"],
+            "results": campaign["results"][-50:],
             "remaining": len([l for l in campaign["leads"] if not l.get("done")]),
-            "total":     len(campaign["leads"]),
+            "total": len(campaign["leads"]),
+            "call_delay": CALL_DELAY,
+            "max_parallel": MAX_PARALLEL,
         })
-
-
 
 
 # ── Webhook da Api4Com ────────────────────────────────────────────────────────
@@ -149,22 +170,23 @@ def webhook():
 
         event_type = data.get("eventType", "")
 
-        # Só processa eventos de fim de chamada
-        # channel-answer = atendeu, channel-hangup = desligou
+        # Só processa eventos relevantes
         if event_type not in ("channel-answer", "channel-hangup"):
             return jsonify({"ok": True, "ignored": True, "event": event_type})
 
-        # Campos reais da Api4Com v1.4
-        phone     = data.get("called") or data.get("to") or data.get("phone") or ""
-        cause     = data.get("hangupCause") or data.get("hangup_cause") or ""
-        duration  = int(data.get("duration") or 0)
+        phone = data.get("called") or data.get("to") or data.get("phone") or ""
+        cause = data.get("hangupCause") or data.get("hangup_cause") or ""
+        duration = int(data.get("duration") or 0)
 
         # Metadata com nome do lead
         meta = data.get("metadata") or {}
         if isinstance(meta, str):
             import json as _json
-            try: meta = _json.loads(meta)
-            except: meta = {}
+            try:
+                meta = _json.loads(meta)
+            except Exception:
+                meta = {}
+
         lead_name = meta.get("lead_name", "") if isinstance(meta, dict) else ""
 
         # Determina status
@@ -179,7 +201,7 @@ def webhook():
         logger.info(f"Webhook processado: {event_type} | {lead_name} | {phone_clean} | {status}")
 
         with campaign_lock:
-            # Atualiza linha na tabela
+            # Atualiza linha em results
             for r in reversed(campaign["results"]):
                 if _fmt_phone(r.get("phone", "")) == phone_clean and r["status"] == "discando":
                     r["status"] = status
@@ -187,15 +209,10 @@ def webhook():
                         lead_name = r.get("name", "")
                     break
 
-            # Stats (só no hangup para não duplicar)
-            if event_type == "channel-hangup":
-                campaign["stats"][status] = campaign["stats"].get(status, 0) + 1
-                campaign["stats"]["total"] = campaign["stats"].get("total", 0) + 1
-
-            # Marca atendido e pausa discagem
+            # Marca atendido e pausa discagem imediatamente
             if status == "answered" and not campaign["answered"]:
                 campaign["answered"] = {
-                    "name":  lead_name or phone_clean,
+                    "name": lead_name or phone_clean,
                     "phone": phone_clean,
                 }
                 campaign["paused"] = True
@@ -212,6 +229,7 @@ def webhook():
 def webhook_health():
     return jsonify({"ok": True, "message": "Webhook endpoint ativo"})
 
+
 # ── Motor de discagem ─────────────────────────────────────────────────────────
 def _run_campaign():
     leads = [l for l in campaign["leads"] if not l.get("done")]
@@ -221,12 +239,16 @@ def _run_campaign():
     while i < len(leads) and campaign["running"]:
         # Aguarda se pausado
         while campaign["paused"] and campaign["running"]:
-            time.sleep(1)
+            time.sleep(0.2)
+
+        if not campaign["running"]:
+            break
 
         batch = leads[i:i + MAX_PARALLEL]
         i += MAX_PARALLEL
 
-        campaign["current"] = [l["name"] for l in batch]
+        with campaign_lock:
+            campaign["current"] = [l["name"] for l in batch]
 
         threads = []
         for lead in batch:
@@ -237,18 +259,23 @@ def _run_campaign():
         for t in threads:
             t.join()
 
-        campaign["current"] = []
+        with campaign_lock:
+            campaign["current"] = []
 
         # Se alguém atendeu, pausa até usuário clicar em retomar
         if campaign["answered"]:
             campaign["paused"] = True
             while campaign["paused"] and campaign["running"]:
-                time.sleep(1)
+                time.sleep(0.2)
 
-        time.sleep(2)
+        # cooldown entre batches
+        if campaign["running"]:
+            time.sleep(CALL_DELAY)
 
-    campaign["running"] = False
-    campaign["current"] = []
+    with campaign_lock:
+        campaign["running"] = False
+        campaign["current"] = []
+
     logger.info("Campanha finalizada")
 
 
@@ -263,6 +290,8 @@ def _dial_lead(lead: dict):
         call_id = _originate(phone, lead["name"])
         if not call_id:
             _update_result(lead["name"], phone, "error")
+            with campaign_lock:
+                campaign["stats"]["total"] += 1
             continue
 
         # Polling de status via GET /calls
@@ -278,12 +307,15 @@ def _dial_lead(lead: dict):
             lead["done"] = True
             with campaign_lock:
                 campaign["answered"] = {"name": lead["name"], "phone": phone}
+                campaign["paused"] = True
             return
 
         if result == "invalid":
             continue  # pula número inválido
 
-        time.sleep(2)
+        # cooldown entre números do mesmo lead
+        if campaign["running"] and not campaign["paused"]:
+            time.sleep(CALL_DELAY)
 
     lead["done"] = True
 
@@ -291,11 +323,16 @@ def _dial_lead(lead: dict):
 def _originate(phone: str, name: str) -> str | None:
     phone = _fmt_phone(phone)
     try:
-        r = http.post(f"{API_BASE}/dialer", headers=HEADERS, json={
-            "extension": RAMAL,
-            "phone":     phone,
-            "metadata":  {"lead_name": name, "source": "discador_cloud"},
-        }, timeout=15)
+        r = http.post(
+            f"{API_BASE}/dialer",
+            headers=HEADERS,
+            json={
+                "extension": RAMAL,
+                "phone": phone,
+                "metadata": {"lead_name": name, "source": "discador_cloud"},
+            },
+            timeout=15
+        )
         r.raise_for_status()
         data = r.json()
         return str(data.get("id") or data.get("call_id") or "")
@@ -306,45 +343,67 @@ def _originate(phone: str, name: str) -> str | None:
 
 def _wait_result(phone: str, name: str, call_id: str) -> str:
     phone_fmt = _fmt_phone(phone)
+
     for _ in range(20):  # até ~100s
+        if not campaign["running"]:
+            return "cancelled"
+
         time.sleep(5)
+
         try:
-            r = http.get(f"{API_BASE}/calls", headers=HEADERS,
-                         params={"page": 1}, timeout=10)
+            r = http.get(
+                f"{API_BASE}/calls",
+                headers=HEADERS,
+                params={"page": 1},
+                timeout=10
+            )
             calls = r.json().get("data", [])
+
             for c in calls:
-                if c.get("to", "").replace(" ", "") == phone_fmt:
-                    cause    = (c.get("hangup_cause") or "").upper()
+                to_number = _fmt_phone(c.get("to", ""))
+                current_call_id = str(c.get("id") or c.get("call_id") or "")
+
+                # tenta casar por telefone e/ou por id
+                if to_number == phone_fmt or (call_id and current_call_id == call_id):
+                    cause = (c.get("hangup_cause") or "").upper()
                     duration = int(c.get("duration") or 0)
+
                     if duration > 0:
                         return "answered"
+
+                    # se ainda estiver em andamento, continua esperando
+                    if not cause:
+                        continue
+
                     return _cause_to_status(cause)
-        except Exception:
-            pass
+
+        except Exception as e:
+            logger.warning(f"Erro consultando status da chamada {phone_fmt}: {e}")
+
     return "cancelled"
 
 
 def _cause_to_status(cause: str) -> str:
-    # Api4Com retorna em inglês via API e em português no painel
     mapping = {
         # Inglês (via API)
-        "NORMAL_CLEARING":       "answered",
-        "ORIGINATOR_CANCEL":     "cancelled",
-        "NO_ANSWER":             "cancelled",
-        "USER_BUSY":             "cancelled",
-        "CALL_REJECTED":         "cancelled",
-        "SUBSCRIBER_ABSENT":     "cancelled",
-        "VOICEMAIL":             "voicemail",
-        "UNALLOCATED_NUMBER":    "invalid",
+        "NORMAL_CLEARING": "answered",
+        "ORIGINATOR_CANCEL": "cancelled",
+        "NO_ANSWER": "cancelled",
+        "USER_BUSY": "cancelled",
+        "CALL_REJECTED": "cancelled",
+        "SUBSCRIBER_ABSENT": "cancelled",
+        "VOICEMAIL": "voicemail",
+        "UNALLOCATED_NUMBER": "invalid",
         "INVALID_NUMBER_FORMAT": "invalid",
-        "USER_NOT_REGISTERED":   "invalid",
+        "USER_NOT_REGISTERED": "invalid",
+
         # Português (painel Api4Com)
-        "ATENDIDA":              "answered",
-        "CANCELADA":             "cancelled",
-        "CAIXA POSTAL":          "voicemail",
+        "ATENDIDA": "answered",
+        "CANCELADA": "cancelled",
+        "CAIXA POSTAL": "voicemail",
         "NAO FOI POSSIVEL COMPLETAR": "invalid",
-        "NAO FOI POSSIVEL":      "invalid",
-        "NUMERO INVALIDO":       "invalid",
+        "NAO FOI POSSIVEL": "invalid",
+        "NUMERO INVALIDO": "invalid",
     }
     return mapping.get(cause.upper().strip(), "cancelled")
 
@@ -354,9 +413,12 @@ def _add_result(name, phone, status):
     with campaign_lock:
         campaign["results"].append({
             "id": str(uuid.uuid4())[:8],
-            "name": name, "phone": phone,
-            "status": status, "ts": time.strftime("%H:%M:%S"),
+            "name": name,
+            "phone": phone,
+            "status": status,
+            "ts": time.strftime("%H:%M:%S"),
         })
+
 
 def _update_result(name, phone, status):
     with campaign_lock:
@@ -364,6 +426,7 @@ def _update_result(name, phone, status):
             if r["name"] == name and r["phone"] == phone:
                 r["status"] = status
                 break
+
 
 def _fmt_phone(raw: str) -> str:
     import re
@@ -374,32 +437,57 @@ def _fmt_phone(raw: str) -> str:
         d = d[1:]
     return d
 
+
 def _norm(col: str) -> str:
     import unicodedata, re
     col = unicodedata.normalize("NFKD", str(col).strip().lower())
     col = "".join(c for c in col if not unicodedata.combining(c))
     return re.sub(r"\s+", "_", col)
 
+
 def _parse_leads(df) -> list:
     import re
-    NAME_COLS  = ["nome","name","contato","cliente"]
-    PHONE_COLS = ["fone1","fone2","fone3","fone4","fone5",
-                  "telefone1","telefone2","telefone3","telefone4","telefone5",
-                  "telefone","celular","tel1","tel2","tel3","phone"]
+
+    NAME_COLS = ["nome", "name", "contato", "cliente"]
+    PHONE_COLS = [
+        "fone1", "fone2", "fone3", "fone4", "fone5",
+        "telefone1", "telefone2", "telefone3", "telefone4", "telefone5",
+        "telefone", "celular", "tel1", "tel2", "tel3", "phone"
+    ]
+
     leads = []
     for idx, row in df.iterrows():
-        name = next((str(row[c]).strip() for c in NAME_COLS if c in row and pd.notna(row[c]) and str(row[c]).strip()), f"Lead {idx+1}")
+        name = next(
+            (
+                str(row[c]).strip()
+                for c in NAME_COLS
+                if c in row and pd.notna(row[c]) and str(row[c]).strip()
+            ),
+            f"Lead {idx+1}"
+        )
+
         phones = []
         for c in PHONE_COLS:
-            if c not in row: continue
+            if c not in row:
+                continue
+
             val = str(row[c]).strip() if pd.notna(row[c]) else ""
             d = re.sub(r"\D", "", val)
-            if d.startswith("55") and len(d) > 11: d = d[2:]
-            if len(d) == 12 and d.startswith("0"): d = d[1:]
+
+            if d.startswith("55") and len(d) > 11:
+                d = d[2:]
+            if len(d) == 12 and d.startswith("0"):
+                d = d[1:]
             if 10 <= len(d) <= 11 and d not in phones:
                 phones.append(d)
+
         if phones:
-            leads.append({"name": name, "phones": phones, "done": False})
+            leads.append({
+                "name": name,
+                "phones": phones,
+                "done": False
+            })
+
     return leads
 
 
