@@ -22,7 +22,7 @@ API_BASE = "https://api.api4com.com/api/v1"
 RAMAL = os.getenv("RAMAL", "1005")
 
 # Tempo entre uma ligação e outra
-CALL_DELAY = float(os.getenv("CALL_DELAY", "0.5"))
+CALL_DELAY = float(os.getenv("CALL_DELAY", "0.1"))
 
 # Duração mínima para considerar que houve atendimento humano
 MIN_HUMAN_DURATION = int(os.getenv("MIN_HUMAN_DURATION", "8"))
@@ -41,6 +41,7 @@ campaign = {
     "results": [],
     "current": [],
     "answered": None,
+    "last_error": None,
     "stats": {
         "answered": 0,
         "cancelled": 0,
@@ -98,10 +99,15 @@ def upload():
         campaign["running"] = False
         campaign["paused"] = False
         campaign["current"] = []
+        campaign["last_error"] = None
+
+    logger.info(f"Upload concluído | leads encontrados: {len(leads)}")
+    logger.info(f"Colunas detectadas: {list(df.columns)}")
 
     return jsonify({
         "ok": True,
         "total": len(leads),
+        "count": len(leads),
         "preview": [{"name": l["name"], "phones": l["phones"]} for l in leads[:5]],
     })
 
@@ -135,13 +141,17 @@ def start():
         campaign["running"] = True
         campaign["paused"] = False
         campaign["answered"] = None
+        campaign["last_error"] = None
+        campaign["current"] = []
 
-        # opcional: recomeçar só os não concluídos
         for lead in campaign["leads"]:
-            if "done" not in lead:
-                lead["done"] = False
+            lead["done"] = False
 
-    t = threading.Thread(target=_run_campaign_sync, daemon=True)
+    logger.info(
+        f"Iniciando campanha | leads={len(campaign['leads'])} | call_delay={CALL_DELAY} | min_human_duration={MIN_HUMAN_DURATION}"
+    )
+
+    t = threading.Thread(target=_run_campaign_safe, daemon=True)
     t.start()
 
     return jsonify({
@@ -149,6 +159,7 @@ def start():
         "mode": "sequencial",
         "call_delay": CALL_DELAY,
         "min_human_duration": MIN_HUMAN_DURATION,
+        "total": len(campaign["leads"]),
     })
 
 
@@ -196,16 +207,13 @@ def state():
             "call_delay": CALL_DELAY,
             "min_human_duration": MIN_HUMAN_DURATION,
             "mode": "sequencial",
+            "last_error": campaign["last_error"],
         })
 
 
 # ── Webhook ───────────────────────────────────────────────────────────────────
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    """
-    Mantido para debug/saúde. A classificação principal está sendo feita
-    pelo polling em _wait_result().
-    """
     try:
         data = request.get_json(silent=True) or {}
         logger.info(f"Webhook recebido: {data}")
@@ -221,12 +229,28 @@ def webhook_health():
 
 
 # ── Motor sequencial ──────────────────────────────────────────────────────────
-def _run_campaign_sync():
-    logger.info(f"Iniciando campanha sequencial: {len(campaign['leads'])} leads")
+def _run_campaign_safe():
+    try:
+        _run_campaign_sync()
+    except Exception as e:
+        logger.exception("Erro fatal na thread da campanha")
+        with campaign_lock:
+            campaign["running"] = False
+            campaign["paused"] = False
+            campaign["current"] = []
+            campaign["last_error"] = str(e)
 
-    for lead in campaign["leads"]:
+
+def _run_campaign_sync():
+    with campaign_lock:
+        leads = list(campaign["leads"])
+
+    logger.info(f"Iniciando campanha sequencial: {len(leads)} leads")
+
+    for idx, lead in enumerate(leads, start=1):
         with campaign_lock:
             if not campaign["running"]:
+                logger.info("Campanha interrompida manualmente")
                 break
 
         if lead.get("done"):
@@ -238,12 +262,14 @@ def _run_campaign_sync():
                 running = campaign["running"]
             if not running or not paused:
                 break
-            time.sleep(0.2)
+            time.sleep(0.1)
 
         with campaign_lock:
             if not campaign["running"]:
                 break
-            campaign["current"] = [lead["name"]]
+            campaign["current"] = [f"{lead['name']} ({idx}/{len(leads)})"]
+
+        logger.info(f"Processando lead {idx}/{len(leads)}: {lead['name']} | telefones={lead['phones']}")
 
         result = _dial_lead_sequential(lead)
 
@@ -254,18 +280,20 @@ def _run_campaign_sync():
             with campaign_lock:
                 campaign["paused"] = True
 
+            logger.info(f"Lead atendeu, campanha pausada: {lead['name']}")
+
             while True:
                 with campaign_lock:
                     paused = campaign["paused"]
                     running = campaign["running"]
                 if not running or not paused:
                     break
-                time.sleep(0.2)
+                time.sleep(0.1)
 
         with campaign_lock:
             still_running = campaign["running"]
 
-        if still_running:
+        if still_running and CALL_DELAY > 0:
             time.sleep(CALL_DELAY)
 
     with campaign_lock:
@@ -293,23 +321,27 @@ def _dial_lead_sequential(lead: dict) -> str:
                 running = campaign["running"]
             if not running or not paused:
                 break
-            time.sleep(0.2)
+            time.sleep(0.1)
 
         with campaign_lock:
             if not campaign["running"]:
                 return "stopped"
 
-        logger.info(f"[{lead['name']}] -> discando {phone}")
+        logger.info(f"[{lead['name']}] discando número {phone}")
         _add_result(lead["name"], phone, "discando")
 
         call_id = _originate(phone, lead["name"])
         if not call_id:
+            logger.warning(f"[{lead['name']}] falha ao originar {phone}")
             _update_result(lead["name"], phone, "error")
             with campaign_lock:
                 campaign["stats"]["error"] += 1
                 campaign["stats"]["total"] += 1
-            time.sleep(CALL_DELAY)
+            if CALL_DELAY > 0:
+                time.sleep(CALL_DELAY)
             continue
+
+        logger.info(f"[{lead['name']}] chamada originada com sucesso | phone={phone} | call_id={call_id}")
 
         result = _wait_result(phone, lead["name"], call_id)
         _update_result(lead["name"], phone, result)
@@ -319,6 +351,8 @@ def _dial_lead_sequential(lead: dict) -> str:
             if result in campaign["stats"]:
                 campaign["stats"][result] += 1
 
+        logger.info(f"[{lead['name']}] resultado final | phone={phone} | status={result}")
+
         if result == "answered":
             lead["done"] = True
             with campaign_lock:
@@ -326,12 +360,12 @@ def _dial_lead_sequential(lead: dict) -> str:
             logger.info(f"Humano atendeu: {lead['name']} {phone}")
             return "answered"
 
-        # voicemail / cancelled / invalid / error -> próximo número do mesmo lead
-        with campaign_lock:
-            still_running = campaign["running"]
-
-        if still_running:
-            time.sleep(CALL_DELAY)
+        # segue rápido para o próximo número
+        if result == "invalid":
+            time.sleep(0.05)
+        elif result in ("voicemail", "cancelled", "error"):
+            if CALL_DELAY > 0:
+                time.sleep(CALL_DELAY)
 
     lead["done"] = True
     return "finished_lead"
@@ -340,45 +374,47 @@ def _dial_lead_sequential(lead: dict) -> str:
 def _originate(phone: str, name: str) -> str | None:
     phone = _fmt_phone(phone)
 
+    payload = {
+        "extension": RAMAL,
+        "phone": phone,
+        "metadata": {
+            "lead_name": name,
+            "source": "discador_cloud",
+        },
+    }
+
     try:
+        logger.info(f"POST {API_BASE}/dialer | payload={payload}")
+
         r = http.post(
             f"{API_BASE}/dialer",
             headers=HEADERS,
-            json={
-                "extension": RAMAL,
-                "phone": phone,
-                "metadata": {
-                    "lead_name": name,
-                    "source": "discador_cloud",
-                },
-            },
-            timeout=15
+            json=payload,
+            timeout=20
         )
+
+        logger.info(f"Resposta originate | status_code={r.status_code} | body={r.text[:1000]}")
         r.raise_for_status()
+
         data = r.json()
         return str(data.get("id") or data.get("call_id") or "")
-    except Exception as e:
-        logger.error(f"Erro ao originar {phone}: {e}")
+    except Exception:
+        logger.exception(f"Erro ao originar {phone}")
         return None
 
 
 def _wait_result(phone: str, name: str, call_id: str) -> str:
     """
-    Espera o resultado final da chamada.
-    Regras:
-    - caixa postal / robô / URA curta -> voicemail
-    - inválido -> invalid
-    - não atendeu / ocupado / cancelada -> cancelled
-    - duração suficiente -> answered
+    Espera o resultado final da chamada mais rapidamente.
     """
     phone_fmt = _fmt_phone(phone)
 
-    for _ in range(20):  # até ~100s
+    for _ in range(30):  # até ~30s
         with campaign_lock:
             if not campaign["running"]:
                 return "cancelled"
 
-        time.sleep(5)
+        time.sleep(1)
 
         try:
             r = http.get(
@@ -395,12 +431,11 @@ def _wait_result(phone: str, name: str, call_id: str) -> str:
                 to_number = _fmt_phone(c.get("to", ""))
                 current_call_id = str(c.get("id") or c.get("call_id") or "")
 
-                # tenta casar por telefone e/ou id
                 if to_number == phone_fmt or (call_id and current_call_id == call_id):
                     cause = (c.get("hangup_cause") or c.get("hangupCause") or "").upper().strip()
                     duration = int(c.get("duration") or 0)
 
-                    # se ainda está em andamento, continua esperando
+                    # ainda em andamento
                     if not cause and duration == 0:
                         continue
 
