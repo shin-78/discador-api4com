@@ -19,8 +19,15 @@
   --red:      #ef4444;
   --orange:   #f97316;
 }
+
 * { margin:0; padding:0; box-sizing:border-box; }
-body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
 
 /* ── Header ── */
 .header {
@@ -28,21 +35,70 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
   border-bottom: 1px solid var(--border);
   padding: 0 32px;
   height: 60px;
-  display: flex; align-items: center; justify-content: space-between;
-  position: sticky; top: 0; z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
-.header-left { display: flex; align-items: center; gap: 12px; }
-.logo { font-size: 1.1rem; font-weight: 700; letter-spacing: -.02em; }
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -.02em;
+}
+
 .logo span { color: var(--green); }
-.badge { background: var(--border); color: var(--muted); padding: 3px 10px; border-radius: 20px; font-size: .75rem; }
-.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
-.status-dot.online { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.badge {
+  background: var(--border);
+  color: var(--muted);
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: .75rem;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.status-dot.online {
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,100% { opacity:1 }
+  50% { opacity:.3 }
+}
 
 /* ── Layout ── */
-.main { padding: 28px 32px; max-width: 1200px; margin: 0 auto; }
-.grid-2 { display: grid; grid-template-columns: 360px 1fr; gap: 20px; }
-@media(max-width:900px){ .grid-2 { grid-template-columns: 1fr; } }
+.main {
+  padding: 28px 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 20px;
+}
+
+@media(max-width:900px) {
+  .grid-2 { grid-template-columns: 1fr; }
+}
 
 /* ── Cards ── */
 .card {
@@ -51,9 +107,13 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
   border-radius: 12px;
   padding: 20px;
 }
+
 .card-title {
-  font-size: .7rem; text-transform: uppercase; letter-spacing: .1em;
-  color: var(--muted); margin-bottom: 16px;
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--muted);
+  margin-bottom: 16px;
 }
 
 /* ── Upload ── */
@@ -65,10 +125,26 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
   cursor: pointer;
   transition: .2s;
 }
-.upload-zone:hover, .upload-zone.drag { border-color: var(--blue); background: rgba(59,130,246,.05); }
-.upload-zone .icon { font-size: 2rem; margin-bottom: 8px; }
-.upload-zone p { color: var(--muted); font-size: .85rem; margin-top: 4px; }
+
+.upload-zone:hover,
+.upload-zone.drag {
+  border-color: var(--blue);
+  background: rgba(59,130,246,.05);
+}
+
+.upload-zone .icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+.upload-zone p {
+  color: var(--muted);
+  font-size: .85rem;
+  margin-top: 4px;
+}
+
 .upload-zone strong { color: var(--text); }
+
 #fileInput { display: none; }
 
 .file-info {
@@ -80,30 +156,78 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
   margin-top: 12px;
   font-size: .85rem;
 }
-.file-info .fname { font-weight: 600; color: var(--green); }
-.file-info .fcount { color: var(--muted); margin-top: 2px; }
+
+.file-info .fname {
+  font-weight: 600;
+  color: var(--green);
+  word-break: break-word;
+}
+
+.file-info .fcount {
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* ── Controles ── */
+.control-box {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255,255,255,.02);
+}
+
+.control-label {
+  font-size: .78rem;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.range-row {
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.range-row input[type=range] {
+  flex:1;
+  accent-color: var(--blue);
+}
+
+.range-row .val {
+  font-size:.85rem;
+  font-weight:600;
+  color:var(--blue);
+  min-width:40px;
+  text-align:right;
+}
 
 /* ── Botões ── */
 .btn {
-  width: 100%; padding: 12px;
-  border: none; border-radius: 8px;
-  font-size: .9rem; font-weight: 600;
-  cursor: pointer; transition: .15s;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: .9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: .15s;
   margin-top: 10px;
 }
+
 .btn-green  { background: var(--green); color: #000; }
 .btn-green:hover { background: #16a34a; }
+
 .btn-red    { background: #7f1d1d; color: #fca5a5; }
 .btn-red:hover { background: #991b1b; }
+
 .btn-blue   { background: #1e3a5f; color: #93c5fd; }
 .btn-blue:hover { background: #1e40af; }
-.btn:disabled { opacity: .4; cursor: not-allowed; }
 
-/* ── Paralelo ── */
-.range-row { display:flex; align-items:center; gap:10px; margin-top:14px; }
-.range-row label { font-size:.8rem; color:var(--muted); white-space:nowrap; }
-.range-row input[type=range] { flex:1; accent-color:var(--blue); }
-.range-row .val { font-size:.85rem; font-weight:600; color:var(--blue); min-width:20px; }
+.btn:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
 
 /* ── Alert de atendimento ── */
 .alert-answered {
@@ -115,48 +239,140 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
   margin-bottom: 20px;
   animation: fadeIn .4s;
 }
+
 .alert-answered.show { display: block; }
-@keyframes fadeIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:none} }
-.alert-answered .a-label { font-size:.7rem; text-transform:uppercase; letter-spacing:.1em; color:#16a34a; }
-.alert-answered .a-name  { font-size:1.8rem; font-weight:800; color:var(--green); margin: 4px 0; }
-.alert-answered .a-phone { color:#86efac; font-size:1rem; font-family:monospace; }
-.alert-answered .a-ramal { display:inline-block; background:#166534; color:var(--green); padding:5px 14px; border-radius:6px; font-size:.85rem; margin-top:10px; }
+
+@keyframes fadeIn {
+  from { opacity:0; transform:translateY(-8px) }
+  to   { opacity:1; transform:none }
+}
+
+.alert-answered .a-label {
+  font-size:.7rem;
+  text-transform:uppercase;
+  letter-spacing:.1em;
+  color:#16a34a;
+}
+
+.alert-answered .a-name {
+  font-size:1.8rem;
+  font-weight:800;
+  color:var(--green);
+  margin: 4px 0;
+}
+
+.alert-answered .a-phone {
+  color:#86efac;
+  font-size:1rem;
+  font-family:monospace;
+}
+
+.alert-answered .a-ramal {
+  display:inline-block;
+  background:#166534;
+  color:var(--green);
+  padding:5px 14px;
+  border-radius:6px;
+  font-size:.85rem;
+  margin-top:10px;
+}
 
 /* ── Stats ── */
-.stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:20px; }
-.stat-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px; text-align:center; }
-.stat-card .sv { font-size:1.6rem; font-weight:700; }
-.stat-card .sl { font-size:.7rem; color:var(--muted); margin-top:2px; }
+.stats-row {
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+  margin-bottom:20px;
+}
+
+.stat-card {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:14px;
+  text-align:center;
+}
+
+.stat-card .sv {
+  font-size:1.6rem;
+  font-weight:700;
+}
+
+.stat-card .sl {
+  font-size:.7rem;
+  color:var(--muted);
+  margin-top:2px;
+}
+
 .stat-card.green .sv { color:var(--green); }
-.stat-card.blue  .sv { color:var(--blue); }
-.stat-card.purple.sv { color:var(--purple); }
-.stat-card.gray  .sv { color:var(--muted); }
+.stat-card.blue .sv  { color:var(--blue); }
+.stat-card.purple .sv { color:var(--purple); }
+.stat-card.gray .sv  { color:var(--muted); }
 
 /* ── Status badge ── */
 .status-bar {
-  display:flex; align-items:center; gap:10px;
-  background:var(--border); border-radius:8px;
-  padding:10px 14px; margin-bottom:16px; font-size:.85rem;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:var(--border);
+  border-radius:8px;
+  padding:10px 14px;
+  margin-bottom:16px;
+  font-size:.85rem;
 }
+
 .status-bar .s-icon { font-size:1.1rem; }
 .status-bar .s-text { color:var(--muted); }
 .status-bar .s-lead { font-weight:600; color:var(--text); }
+
 .status-bar.discando { border-left:3px solid var(--blue); }
-.status-bar.atendido  { border-left:3px solid var(--green); background:var(--green-bg); }
-.status-bar.pausado   { border-left:3px solid var(--orange); }
+.status-bar.atendido { border-left:3px solid var(--green); background:var(--green-bg); }
+.status-bar.pausado  { border-left:3px solid var(--orange); }
+.status-bar.error    { border-left:3px solid var(--red); }
 
 /* ── Tabela ── */
 .table-wrap { overflow-x:auto; }
-table { width:100%; border-collapse:collapse; font-size:.82rem; }
-th { text-align:left; color:var(--muted); font-weight:500; padding:8px 12px; border-bottom:1px solid var(--border); font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; }
-td { padding:10px 12px; border-bottom:1px solid rgba(31,41,55,.6); }
+
+table {
+  width:100%;
+  border-collapse:collapse;
+  font-size:.82rem;
+}
+
+th {
+  text-align:left;
+  color:var(--muted);
+  font-weight:500;
+  padding:8px 12px;
+  border-bottom:1px solid var(--border);
+  font-size:.72rem;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+
+td {
+  padding:10px 12px;
+  border-bottom:1px solid rgba(31,41,55,.6);
+}
+
 tr:last-child td { border-bottom:none; }
-.empty-row td { color:var(--muted); text-align:center; padding:32px; }
+
+.empty-row td {
+  color:var(--muted);
+  text-align:center;
+  padding:32px;
+}
 
 .tag {
-  display:inline-block; padding:2px 8px; border-radius:4px;
-  font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em;
+  display:inline-block;
+  padding:2px 8px;
+  border-radius:4px;
+  font-size:.72rem;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.04em;
 }
+
 .tag-answered  { background:rgba(34,197,94,.12);  color:var(--green); }
 .tag-cancelled { background:rgba(107,114,128,.15); color:var(--muted); }
 .tag-voicemail { background:rgba(167,139,250,.12); color:var(--purple); }
@@ -166,35 +382,67 @@ tr:last-child td { border-bottom:none; }
 
 /* ── Progress ── */
 .progress-wrap { margin-bottom:16px; }
-.progress-label { display:flex; justify-content:space-between; font-size:.78rem; color:var(--muted); margin-bottom:6px; }
-.progress-bar { height:4px; background:var(--border); border-radius:4px; overflow:hidden; }
-.progress-fill { height:100%; background:var(--blue); border-radius:4px; transition:width .5s; }
+
+.progress-label {
+  display:flex;
+  justify-content:space-between;
+  font-size:.78rem;
+  color:var(--muted);
+  margin-bottom:6px;
+}
+
+.progress-bar {
+  height:4px;
+  background:var(--border);
+  border-radius:4px;
+  overflow:hidden;
+}
+
+.progress-fill {
+  height:100%;
+  background:var(--blue);
+  border-radius:4px;
+  transition:width .5s;
+}
 
 /* ── Current dialing ── */
-.dialing-list { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px; min-height:28px; }
+.dialing-list {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-bottom:16px;
+  min-height:28px;
+}
+
 .dialing-chip {
-  background:rgba(59,130,246,.12); border:1px solid rgba(59,130,246,.2);
-  color:var(--blue); padding:3px 10px; border-radius:20px; font-size:.78rem;
+  background:rgba(59,130,246,.12);
+  border:1px solid rgba(59,130,246,.2);
+  color:var(--blue);
+  padding:3px 10px;
+  border-radius:20px;
+  font-size:.78rem;
   animation: chipIn .2s;
 }
-@keyframes chipIn { from{opacity:0;transform:scale(.9)} to{opacity:1;transform:none} }
+
+@keyframes chipIn {
+  from { opacity:0; transform:scale(.9) }
+  to   { opacity:1; transform:none }
+}
 </style>
 </head>
 <body>
 
-<!-- Header -->
 <div class="header">
   <div class="header-left">
     <div class="status-dot" id="onlineDot"></div>
     <div class="logo">Discador <span>Api4Com</span></div>
     <span class="badge">Ramal {{ ramal }}</span>
+    <span class="badge">Modo sequencial</span>
   </div>
   <span class="badge" id="headerStatus">Aguardando</span>
 </div>
 
 <div class="main">
-
-  <!-- Alerta de atendimento -->
   <div class="alert-answered" id="alertAnswered">
     <div class="a-label">✅ Chamada Atendida</div>
     <div class="a-name" id="alertName">—</div>
@@ -203,8 +451,6 @@ tr:last-child td { border-bottom:none; }
   </div>
 
   <div class="grid-2">
-
-    <!-- Coluna esquerda: controles -->
     <div>
       <div class="card">
         <div class="card-title">Lista de leads</div>
@@ -213,8 +459,9 @@ tr:last-child td { border-bottom:none; }
           <div class="icon">📋</div>
           <strong>Clique para selecionar</strong>
           <p>ou arraste seu arquivo aqui</p>
-          <p style="margin-top:8px;font-size:.75rem;">CSV ou Excel (.xlsx)</p>
+          <p style="margin-top:8px;font-size:.75rem;">CSV ou Excel (.xlsx / .xls)</p>
         </div>
+
         <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
 
         <div class="file-info" id="fileInfo">
@@ -222,29 +469,36 @@ tr:last-child td { border-bottom:none; }
           <div class="fcount" id="fileCount">—</div>
         </div>
 
-        <div class="range-row">
-          <label>Leads em paralelo:</label>
-          <input type="range" id="paralelo" min="1" max="10" value="3"
-                 oninput="document.getElementById('parVal').textContent=this.value">
-          <span class="val" id="parVal">3</span>
+        <div class="control-box">
+          <div class="control-label">Tempo entre uma ligação e outra</div>
+          <div class="range-row">
+            <input
+              type="range"
+              id="callDelay"
+              min="0"
+              max="3"
+              step="0.1"
+              value="0.5"
+              oninput="document.getElementById('callDelayVal').textContent = Number(this.value).toFixed(1) + 's'">
+            <span class="val" id="callDelayVal">0.5s</span>
+          </div>
         </div>
 
         <button class="btn btn-green" id="btnStart" onclick="startCampaign()" disabled>
           ▶ Iniciar discagem
         </button>
+
         <button class="btn btn-blue" id="btnResume" onclick="resumeCampaign()" style="display:none">
           ▶ Retomar após atendimento
         </button>
+
         <button class="btn btn-red" id="btnStop" onclick="stopCampaign()" style="display:none">
           ■ Parar campanha
         </button>
       </div>
     </div>
 
-    <!-- Coluna direita: dashboard -->
     <div>
-
-      <!-- Stats -->
       <div class="stats-row">
         <div class="stat-card green">
           <div class="sv" id="statAnswered">0</div>
@@ -264,7 +518,6 @@ tr:last-child td { border-bottom:none; }
         </div>
       </div>
 
-      <!-- Status + progresso -->
       <div class="status-bar" id="statusBar">
         <span class="s-icon">⏳</span>
         <span class="s-text">Aguardando lista...</span>
@@ -280,10 +533,8 @@ tr:last-child td { border-bottom:none; }
         </div>
       </div>
 
-      <!-- Discando agora -->
       <div class="dialing-list" id="dialingList"></div>
 
-      <!-- Tabela de chamadas -->
       <div class="card">
         <div class="card-title">Chamadas recentes</div>
         <div class="table-wrap">
@@ -302,7 +553,6 @@ tr:last-child td { border-bottom:none; }
           </table>
         </div>
       </div>
-
     </div>
   </div>
 </div>
@@ -326,58 +576,147 @@ function stopFlash() {
   document.title = 'Discador Api4Com';
 }
 
+function setStatusBar(type, icon, text, lead = '') {
+  const bar = document.getElementById('statusBar');
+  bar.className = 'status-bar ' + type;
+
+  if (lead) {
+    bar.innerHTML = `
+      <span class="s-icon">${icon}</span>
+      <span class="s-text">${text}</span>
+      <span class="s-lead">${lead}</span>
+    `;
+  } else {
+    bar.innerHTML = `
+      <span class="s-icon">${icon}</span>
+      <span class="s-text">${text}</span>
+    `;
+  }
+}
+
 // ── Upload ────────────────────────────────────────────────────────────────────
 const zone = document.getElementById('uploadZone');
-zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+
+zone.addEventListener('dragover', e => {
+  e.preventDefault();
+  zone.classList.add('drag');
+});
+
 zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
-zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag'); handleFile(e.dataTransfer.files[0]); });
-document.getElementById('fileInput').addEventListener('change', e => handleFile(e.target.files[0]));
+
+zone.addEventListener('drop', e => {
+  e.preventDefault();
+  zone.classList.remove('drag');
+  handleFile(e.dataTransfer.files[0]);
+});
+
+document.getElementById('fileInput').addEventListener('change', e => {
+  handleFile(e.target.files[0]);
+});
 
 async function handleFile(file) {
   if (!file) return;
+
   const fd = new FormData();
   fd.append('file', file);
 
   zone.innerHTML = '<div class="icon">⏳</div><strong>Processando...</strong>';
 
-  const r = await fetch('/api/upload', { method: 'POST', body: fd });
-  const data = await r.json();
+  try {
+    const r = await fetch('/api/upload', {
+      method: 'POST',
+      body: fd
+    });
 
-  if (data.error) {
-    zone.innerHTML = `<div class="icon">❌</div><strong>${data.error}</strong>`;
-    return;
+    const data = await r.json();
+
+    if (!r.ok || data.error) {
+      throw new Error(data.error || 'Falha ao processar arquivo');
+    }
+
+    zone.innerHTML = '<div class="icon">✅</div><strong>Arquivo carregado</strong><p>Clique para trocar</p>';
+    document.getElementById('fileInfo').style.display = 'block';
+    document.getElementById('fileName').textContent = file.name;
+    document.getElementById('fileCount').textContent = `${data.total ?? 0} leads encontrados`;
+    document.getElementById('btnStart').disabled = (data.total ?? 0) <= 0;
+
+    if ((data.total ?? 0) > 0) {
+      setStatusBar('aguardando', '📋', 'Lista carregada. Pronto para iniciar.');
+    } else {
+      setStatusBar('error', '⚠️', 'Arquivo enviado, mas nenhum lead foi encontrado.');
+    }
+
+    console.log('UPLOAD RESPONSE:', data);
+  } catch (err) {
+    zone.innerHTML = `<div class="icon">❌</div><strong>Erro ao processar</strong><p>${err.message}</p>`;
+    document.getElementById('fileInfo').style.display = 'none';
+    document.getElementById('btnStart').disabled = true;
+    setStatusBar('error', '⚠️', err.message || 'Falha ao enviar arquivo');
   }
-
-  zone.innerHTML = '<div class="icon">✅</div><strong>Arquivo carregado</strong><p>Clique para trocar</p>';
-  document.getElementById('fileInfo').style.display = 'block';
-  document.getElementById('fileName').textContent = file.name;
-  document.getElementById('fileCount').textContent = `${data.total} leads encontrados`;
-  document.getElementById('btnStart').disabled = false;
 }
 
 // ── Controles ─────────────────────────────────────────────────────────────────
 async function startCampaign() {
-  const paralelo = document.getElementById('paralelo').value;
-  await fetch('/api/start', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({paralelo: parseInt(paralelo)}) });
-  document.getElementById('btnStart').style.display = 'none';
-  document.getElementById('btnStop').style.display = 'block';
-  document.getElementById('progressWrap').style.display = 'block';
-  startPolling();
+  const callDelay = parseFloat(document.getElementById('callDelay').value || '0.5');
+
+  try {
+    const r = await fetch('/api/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        call_delay: callDelay
+      })
+    });
+
+    const data = await r.json();
+
+    if (!r.ok || data.error) {
+      throw new Error(data.error || 'Erro ao iniciar campanha');
+    }
+
+    document.getElementById('btnStart').style.display = 'none';
+    document.getElementById('btnStop').style.display = 'block';
+    document.getElementById('btnResume').style.display = 'none';
+    document.getElementById('progressWrap').style.display = 'block';
+
+    setStatusBar('discando', '📞', 'Discando automaticamente...');
+    startPolling();
+  } catch (err) {
+    setStatusBar('error', '⚠️', err.message || 'Erro ao iniciar campanha');
+  }
 }
 
 async function stopCampaign() {
-  await fetch('/api/stop', { method: 'POST' });
+  try {
+    await fetch('/api/stop', { method: 'POST' });
+  } catch (e) {}
+
   document.getElementById('btnStop').style.display = 'none';
   document.getElementById('btnResume').style.display = 'none';
   document.getElementById('btnStart').style.display = 'block';
+  document.getElementById('alertAnswered').classList.remove('show');
+  stopFlash();
+  lastAnswered = null;
+  setStatusBar('aguardando', '⏹', 'Campanha parada.');
 }
 
 async function resumeCampaign() {
-  await fetch('/api/resume', { method: 'POST' });
-  document.getElementById('btnResume').style.display = 'none';
-  document.getElementById('alertAnswered').classList.remove('show');
-  lastAnswered = null;
-  stopFlash();
+  try {
+    const r = await fetch('/api/resume', { method: 'POST' });
+    const data = await r.json();
+
+    if (!r.ok || data.error) {
+      throw new Error(data.error || 'Erro ao retomar campanha');
+    }
+
+    document.getElementById('btnResume').style.display = 'none';
+    document.getElementById('alertAnswered').classList.remove('show');
+    lastAnswered = null;
+    stopFlash();
+    setStatusBar('discando', '📞', 'Retomando discagem...');
+  } catch (err) {
+    setStatusBar('error', '⚠️', err.message || 'Erro ao retomar campanha');
+  }
 }
 
 // ── Polling ───────────────────────────────────────────────────────────────────
@@ -391,62 +730,77 @@ async function poll() {
   try {
     const r = await fetch('/api/state');
     const d = await r.json();
+
+    if (!r.ok || d.error) {
+      throw new Error(d.error || 'Falha ao consultar estado');
+    }
+
     updateUI(d);
-  } catch(e) {
+  } catch (e) {
     setStatusBar('error', '⚠️', 'Sem conexão com o servidor');
   }
 }
 
 function updateUI(d) {
   // Stats
-  document.getElementById('statAnswered').textContent  = d.stats.answered  || 0;
-  document.getElementById('statCancelled').textContent = d.stats.cancelled || 0;
-  document.getElementById('statVoicemail').textContent = d.stats.voicemail || 0;
-  document.getElementById('statTotal').textContent     = d.stats.total     || 0;
+  document.getElementById('statAnswered').textContent  = d.stats?.answered  || 0;
+  document.getElementById('statCancelled').textContent = d.stats?.cancelled || 0;
+  document.getElementById('statVoicemail').textContent = d.stats?.voicemail || 0;
+  document.getElementById('statTotal').textContent     = d.stats?.total     || 0;
 
   // Online dot
   const dot = document.getElementById('onlineDot');
-  dot.className = 'status-dot ' + (d.status !== 'aguardando' ? 'online' : '');
+  dot.className = 'status-dot ' + (d.status && d.status !== 'aguardando' ? 'online' : '');
 
   // Header status
-  const labels = { aguardando:'Aguardando', discando:'Discando...', atendido:'Atendido!', pausado:'Pausado' };
-  document.getElementById('headerStatus').textContent = labels[d.status] || d.status;
+  const labels = {
+    aguardando: 'Aguardando',
+    discando: 'Discando...',
+    atendido: 'Atendido!',
+    pausado: 'Pausado'
+  };
+  document.getElementById('headerStatus').textContent = labels[d.status] || d.status || 'Aguardando';
 
   // Status bar
-  const bar = document.getElementById('statusBar');
-  bar.className = 'status-bar ' + d.status;
   if (d.status === 'discando') {
-    bar.innerHTML = `<span class="s-icon">📞</span><span class="s-text">Discando...</span>`;
+    const currentLead = Array.isArray(d.current) && d.current.length ? ` ${d.current[0]}` : '';
+    setStatusBar('discando', '📞', currentLead ? 'Discando:' : 'Discando automaticamente...', currentLead.trim());
   } else if (d.status === 'atendido') {
-    bar.innerHTML = `<span class="s-icon">✅</span><span class="s-text">Atendido — </span><span class="s-lead">${d.answered?.name}</span>`;
+    setStatusBar('atendido', '✅', 'Atendido —', d.answered?.name || '');
   } else if (d.status === 'pausado') {
-    bar.innerHTML = `<span class="s-icon">⏸</span><span class="s-text">Pausado — aguardando fim da ligação</span>`;
+    setStatusBar('pausado', '⏸', 'Pausado — aguardando retomar');
   } else {
-    bar.innerHTML = `<span class="s-icon">⏳</span><span class="s-text">Aguardando...</span>`;
+    setStatusBar('aguardando', '⏳', 'Aguardando...');
   }
 
   // Progresso
-  if (d.total > 0) {
-    const done = d.total - d.remaining;
-    const pct  = Math.round((done / d.total) * 100);
+  if ((d.total || 0) > 0) {
+    document.getElementById('progressWrap').style.display = 'block';
+
+    const done = (d.total || 0) - (d.remaining || 0);
+    const pct = d.total > 0 ? Math.round((done / d.total) * 100) : 0;
+
     document.getElementById('progressText').textContent = `${done} / ${d.total}`;
     document.getElementById('progressFill').style.width = pct + '%';
   }
 
-  // Chips de discando agora
+  // Discando agora
   const dl = document.getElementById('dialingList');
   dl.innerHTML = (d.current || []).map(n => `<div class="dialing-chip">📞 ${n}</div>`).join('');
 
   // Alerta de atendimento
   if (d.answered && d.answered.name !== lastAnswered) {
     lastAnswered = d.answered.name;
-    document.getElementById('alertName').textContent  = d.answered.name;
-    document.getElementById('alertPhone').textContent = d.answered.phone;
+    document.getElementById('alertName').textContent = d.answered.name || 'Lead';
+    document.getElementById('alertPhone').textContent = d.answered.phone || '—';
     document.getElementById('alertAnswered').classList.add('show');
     document.getElementById('btnResume').style.display = 'block';
-    // Som de alerta — toca 3 vezes para não passar despercebido
+
     function playAlert() {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+
+      const ctx = new Ctx();
       [0, 400, 800].forEach(delay => {
         setTimeout(() => {
           const osc = ctx.createOscillator();
@@ -462,27 +816,52 @@ function updateUI(d) {
         }, delay);
       });
     }
+
     try { playAlert(); } catch(e) {}
     flashTitle(d.answered.name);
   }
 
+  // Botões conforme estado
+  if (d.status === 'discando' || d.status === 'pausado' || d.status === 'atendido') {
+    document.getElementById('btnStart').style.display = 'none';
+    document.getElementById('btnStop').style.display = 'block';
+  } else {
+    document.getElementById('btnStop').style.display = 'none';
+    document.getElementById('btnStart').style.display = 'block';
+  }
+
   // Tabela
   const tbody = document.getElementById('callsTable');
+
   if (!d.results || d.results.length === 0) {
     tbody.innerHTML = '<tr class="empty-row"><td colspan="4">Nenhuma chamada ainda</td></tr>';
     return;
   }
-  tbody.innerHTML = [...d.results].reverse().slice(0,50).map(c => `
+
+  tbody.innerHTML = [...d.results].reverse().slice(0, 50).map(c => `
     <tr>
-      <td style="font-weight:500">${c.name}</td>
-      <td style="font-family:monospace;color:var(--muted)">${c.phone}</td>
-      <td><span class="tag tag-${c.status}">${c.status}</span></td>
-      <td style="color:var(--muted);font-size:.78rem">${c.ts}</td>
+      <td style="font-weight:500">${escapeHtml(c.name || '')}</td>
+      <td style="font-family:monospace;color:var(--muted)">${escapeHtml(c.phone || '')}</td>
+      <td><span class="tag tag-${escapeClass(c.status || 'cancelled')}">${escapeHtml(c.status || '—')}</span></td>
+      <td style="color:var(--muted);font-size:.78rem">${escapeHtml(c.ts || '')}</td>
     </tr>
   `).join('');
 }
 
-// Inicia polling imediatamente para ver o estado
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function escapeClass(value) {
+  return String(value).replace(/[^a-zA-Z0-9_-]/g, '');
+}
+
+// Inicia polling imediatamente
 startPolling();
 </script>
 </body>
