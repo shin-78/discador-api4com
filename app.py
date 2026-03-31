@@ -1,4 +1,10 @@
-import os, io, threading, time, uuid, logging
+import os
+import io
+import time
+import uuid
+import logging
+import threading
+
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import pandas as pd
@@ -11,11 +17,15 @@ app = Flask(__name__)
 CORS(app)
 
 # ── Config ────────────────────────────────────────────────────────────────────
-API_TOKEN    = os.getenv("API4COM_TOKEN", "")
-API_BASE     = "https://api.api4com.com/api/v1"
-RAMAL        = os.getenv("RAMAL", "1005")
-MAX_PARALLEL = int(os.getenv("MAX_PARALLEL", "3"))
-CALL_DELAY   = float(os.getenv("CALL_DELAY", "0.5"))  # cooldown entre chamadas/lotes
+API_TOKEN = os.getenv("API4COM_TOKEN", "")
+API_BASE = "https://api.api4com.com/api/v1"
+RAMAL = os.getenv("RAMAL", "1005")
+
+# Tempo entre uma ligação e outra
+CALL_DELAY = float(os.getenv("CALL_DELAY", "0.5"))
+
+# Duração mínima para considerar que houve atendimento humano
+MIN_HUMAN_DURATION = int(os.getenv("MIN_HUMAN_DURATION", "8"))
 
 HEADERS = {
     "Authorization": API_TOKEN,
@@ -25,14 +35,22 @@ HEADERS = {
 
 # ── Estado global da campanha ─────────────────────────────────────────────────
 campaign = {
-    "running":   False,
-    "paused":    False,
-    "leads":     [],        # lista completa
-    "results":   [],        # chamadas realizadas
-    "current":   [],        # leads discando agora
-    "answered":  None,      # lead que atendeu
-    "stats":     {"answered": 0, "cancelled": 0, "voicemail": 0, "invalid": 0, "total": 0},
+    "running": False,
+    "paused": False,
+    "leads": [],
+    "results": [],
+    "current": [],
+    "answered": None,
+    "stats": {
+        "answered": 0,
+        "cancelled": 0,
+        "voicemail": 0,
+        "invalid": 0,
+        "error": 0,
+        "total": 0,
+    },
 }
+
 campaign_lock = threading.Lock()
 
 
@@ -52,7 +70,7 @@ def upload():
     content = file.read()
 
     try:
-        if file.filename.endswith(".csv"):
+        if file.filename.lower().endswith(".csv"):
             df = pd.read_csv(io.BytesIO(content), dtype=str)
         else:
             df = pd.read_excel(io.BytesIO(content), dtype=str)
@@ -66,35 +84,40 @@ def upload():
         return jsonify({"error": "Nenhum lead com telefone válido encontrado"}), 400
 
     with campaign_lock:
-        campaign["leads"]   = leads
+        campaign["leads"] = leads
         campaign["results"] = []
-        campaign["stats"]   = {"answered": 0, "cancelled": 0, "voicemail": 0, "invalid": 0, "total": 0}
+        campaign["stats"] = {
+            "answered": 0,
+            "cancelled": 0,
+            "voicemail": 0,
+            "invalid": 0,
+            "error": 0,
+            "total": 0,
+        }
         campaign["answered"] = None
-        campaign["running"]  = False
-        campaign["paused"]   = False
-        campaign["current"]  = []
+        campaign["running"] = False
+        campaign["paused"] = False
+        campaign["current"] = []
 
     return jsonify({
         "ok": True,
         "total": len(leads),
-        "preview": [{"name": l["name"], "phones": len(l["phones"])} for l in leads[:5]]
+        "preview": [{"name": l["name"], "phones": l["phones"]} for l in leads[:5]],
     })
 
 
 # ── API: iniciar campanha ─────────────────────────────────────────────────────
 @app.route("/api/start", methods=["POST"])
 def start():
-    global MAX_PARALLEL, CALL_DELAY
+    global CALL_DELAY, MIN_HUMAN_DURATION
 
-    if not campaign["leads"]:
-        return jsonify({"error": "Carregue uma planilha primeiro"}), 400
-    if campaign["running"]:
-        return jsonify({"error": "Campanha já está rodando"}), 400
+    with campaign_lock:
+        if not campaign["leads"]:
+            return jsonify({"error": "Carregue uma planilha primeiro"}), 400
+        if campaign["running"]:
+            return jsonify({"error": "Campanha já está rodando"}), 400
 
     data = request.get_json(silent=True) or {}
-
-    if "paralelo" in data:
-        MAX_PARALLEL = int(data["paralelo"])
 
     if "call_delay" in data:
         try:
@@ -102,34 +125,48 @@ def start():
         except Exception:
             return jsonify({"error": "call_delay inválido"}), 400
 
-    campaign["running"] = True
-    campaign["paused"] = False
-    campaign["answered"] = None
+    if "min_human_duration" in data:
+        try:
+            MIN_HUMAN_DURATION = max(1, int(data["min_human_duration"]))
+        except Exception:
+            return jsonify({"error": "min_human_duration inválido"}), 400
 
-    t = threading.Thread(target=_run_campaign, daemon=True)
+    with campaign_lock:
+        campaign["running"] = True
+        campaign["paused"] = False
+        campaign["answered"] = None
+
+        # opcional: recomeçar só os não concluídos
+        for lead in campaign["leads"]:
+            if "done" not in lead:
+                lead["done"] = False
+
+    t = threading.Thread(target=_run_campaign_sync, daemon=True)
     t.start()
 
     return jsonify({
         "ok": True,
-        "paralelo": MAX_PARALLEL,
-        "call_delay": CALL_DELAY
+        "mode": "sequencial",
+        "call_delay": CALL_DELAY,
+        "min_human_duration": MIN_HUMAN_DURATION,
     })
 
 
-# ── API: pausar / retomar / parar ─────────────────────────────────────────────
 @app.route("/api/resume", methods=["POST"])
 def resume():
-    campaign["paused"] = False
-    campaign["answered"] = None
+    with campaign_lock:
+        campaign["paused"] = False
+        campaign["answered"] = None
     return jsonify({"ok": True})
 
 
 @app.route("/api/stop", methods=["POST"])
 def stop():
-    campaign["running"] = False
-    campaign["paused"] = False
-    campaign["answered"] = None
-    campaign["current"] = []
+    with campaign_lock:
+        campaign["running"] = False
+        campaign["paused"] = False
+        campaign["answered"] = None
+        campaign["current"] = []
     return jsonify({"ok": True})
 
 
@@ -138,88 +175,41 @@ def stop():
 def state():
     with campaign_lock:
         answered = campaign["answered"]
+
         status = (
-            "atendido"  if answered else
-            "pausado"   if campaign["paused"] else
-            "discando"  if campaign["running"] else
+            "atendido" if answered else
+            "pausado" if campaign["paused"] else
+            "discando" if campaign["running"] else
             "aguardando"
         )
+
+        remaining = len([l for l in campaign["leads"] if not l.get("done")])
+
         return jsonify({
             "status": status,
             "answered": answered,
             "current": campaign["current"],
             "stats": campaign["stats"],
             "results": campaign["results"][-50:],
-            "remaining": len([l for l in campaign["leads"] if not l.get("done")]),
+            "remaining": remaining,
             "total": len(campaign["leads"]),
             "call_delay": CALL_DELAY,
-            "max_parallel": MAX_PARALLEL,
+            "min_human_duration": MIN_HUMAN_DURATION,
+            "mode": "sequencial",
         })
 
 
-# ── Webhook da Api4Com ────────────────────────────────────────────────────────
+# ── Webhook ───────────────────────────────────────────────────────────────────
 @app.route("/webhook", methods=["POST"])
 def webhook():
     """
-    Recebe eventos em tempo real da Api4Com v1.4.
-    Campos reais: called, eventType, hangupCause, duration, metadata
+    Mantido para debug/saúde. A classificação principal está sendo feita
+    pelo polling em _wait_result().
     """
     try:
         data = request.get_json(silent=True) or {}
         logger.info(f"Webhook recebido: {data}")
-
-        event_type = data.get("eventType", "")
-
-        # Só processa eventos relevantes
-        if event_type not in ("channel-answer", "channel-hangup"):
-            return jsonify({"ok": True, "ignored": True, "event": event_type})
-
-        phone = data.get("called") or data.get("to") or data.get("phone") or ""
-        cause = data.get("hangupCause") or data.get("hangup_cause") or ""
-        duration = int(data.get("duration") or 0)
-
-        # Metadata com nome do lead
-        meta = data.get("metadata") or {}
-        if isinstance(meta, str):
-            import json as _json
-            try:
-                meta = _json.loads(meta)
-            except Exception:
-                meta = {}
-
-        lead_name = meta.get("lead_name", "") if isinstance(meta, dict) else ""
-
-        # Determina status
-        if event_type == "channel-answer":
-            status = "answered"
-        elif duration > 0:
-            status = "answered"
-        else:
-            status = _cause_to_status(cause)
-
-        phone_clean = _fmt_phone(phone)
-        logger.info(f"Webhook processado: {event_type} | {lead_name} | {phone_clean} | {status}")
-
-        with campaign_lock:
-            # Atualiza linha em results
-            for r in reversed(campaign["results"]):
-                if _fmt_phone(r.get("phone", "")) == phone_clean and r["status"] == "discando":
-                    r["status"] = status
-                    if not lead_name:
-                        lead_name = r.get("name", "")
-                    break
-
-            # Marca atendido e pausa discagem imediatamente
-            if status == "answered" and not campaign["answered"]:
-                campaign["answered"] = {
-                    "name": lead_name or phone_clean,
-                    "phone": phone_clean,
-                }
-                campaign["paused"] = True
-                logger.info(f"ATENDIDO via webhook: {lead_name} {phone_clean}")
-
-        return jsonify({"ok": True, "status": status, "phone": phone_clean})
-
+        return jsonify({"ok": True})
     except Exception as e:
         logger.error(f"Erro no webhook: {e}")
         return jsonify({"ok": False, "error": str(e)}), 500
@@ -230,46 +220,52 @@ def webhook_health():
     return jsonify({"ok": True, "message": "Webhook endpoint ativo"})
 
 
-# ── Motor de discagem ─────────────────────────────────────────────────────────
-def _run_campaign():
-    leads = [l for l in campaign["leads"] if not l.get("done")]
-    logger.info(f"Iniciando campanha: {len(leads)} leads")
+# ── Motor sequencial ──────────────────────────────────────────────────────────
+def _run_campaign_sync():
+    logger.info(f"Iniciando campanha sequencial: {len(campaign['leads'])} leads")
 
-    i = 0
-    while i < len(leads) and campaign["running"]:
-        # Aguarda se pausado
-        while campaign["paused"] and campaign["running"]:
+    for lead in campaign["leads"]:
+        with campaign_lock:
+            if not campaign["running"]:
+                break
+
+        if lead.get("done"):
+            continue
+
+        while True:
+            with campaign_lock:
+                paused = campaign["paused"]
+                running = campaign["running"]
+            if not running or not paused:
+                break
             time.sleep(0.2)
 
-        if not campaign["running"]:
-            break
-
-        batch = leads[i:i + MAX_PARALLEL]
-        i += MAX_PARALLEL
-
         with campaign_lock:
-            campaign["current"] = [l["name"] for l in batch]
+            if not campaign["running"]:
+                break
+            campaign["current"] = [lead["name"]]
 
-        threads = []
-        for lead in batch:
-            t = threading.Thread(target=_dial_lead, args=(lead,), daemon=True)
-            t.start()
-            threads.append(t)
-
-        for t in threads:
-            t.join()
+        result = _dial_lead_sequential(lead)
 
         with campaign_lock:
             campaign["current"] = []
 
-        # Se alguém atendeu, pausa até usuário clicar em retomar
-        if campaign["answered"]:
-            campaign["paused"] = True
-            while campaign["paused"] and campaign["running"]:
+        if result == "answered":
+            with campaign_lock:
+                campaign["paused"] = True
+
+            while True:
+                with campaign_lock:
+                    paused = campaign["paused"]
+                    running = campaign["running"]
+                if not running or not paused:
+                    break
                 time.sleep(0.2)
 
-        # cooldown entre batches
-        if campaign["running"]:
+        with campaign_lock:
+            still_running = campaign["running"]
+
+        if still_running:
             time.sleep(CALL_DELAY)
 
     with campaign_lock:
@@ -279,22 +275,42 @@ def _run_campaign():
     logger.info("Campanha finalizada")
 
 
-def _dial_lead(lead: dict):
+def _dial_lead_sequential(lead: dict) -> str:
+    """
+    Liga número por número do mesmo lead.
+    Só passa para o próximo lead quando:
+    - terminar todos os números do lead atual, ou
+    - encontrar atendimento humano.
+    """
     for phone in lead["phones"]:
-        if not campaign["running"] or campaign["paused"]:
-            return
+        with campaign_lock:
+            if not campaign["running"]:
+                return "stopped"
 
-        logger.info(f"[{lead['name']}] → {phone}")
+        while True:
+            with campaign_lock:
+                paused = campaign["paused"]
+                running = campaign["running"]
+            if not running or not paused:
+                break
+            time.sleep(0.2)
+
+        with campaign_lock:
+            if not campaign["running"]:
+                return "stopped"
+
+        logger.info(f"[{lead['name']}] -> discando {phone}")
         _add_result(lead["name"], phone, "discando")
 
         call_id = _originate(phone, lead["name"])
         if not call_id:
             _update_result(lead["name"], phone, "error")
             with campaign_lock:
+                campaign["stats"]["error"] += 1
                 campaign["stats"]["total"] += 1
+            time.sleep(CALL_DELAY)
             continue
 
-        # Polling de status via GET /calls
         result = _wait_result(phone, lead["name"], call_id)
         _update_result(lead["name"], phone, result)
 
@@ -307,21 +323,23 @@ def _dial_lead(lead: dict):
             lead["done"] = True
             with campaign_lock:
                 campaign["answered"] = {"name": lead["name"], "phone": phone}
-                campaign["paused"] = True
-            return
+            logger.info(f"Humano atendeu: {lead['name']} {phone}")
+            return "answered"
 
-        if result == "invalid":
-            continue  # pula número inválido
+        # voicemail / cancelled / invalid / error -> próximo número do mesmo lead
+        with campaign_lock:
+            still_running = campaign["running"]
 
-        # cooldown entre números do mesmo lead
-        if campaign["running"] and not campaign["paused"]:
+        if still_running:
             time.sleep(CALL_DELAY)
 
     lead["done"] = True
+    return "finished_lead"
 
 
 def _originate(phone: str, name: str) -> str | None:
     phone = _fmt_phone(phone)
+
     try:
         r = http.post(
             f"{API_BASE}/dialer",
@@ -329,7 +347,10 @@ def _originate(phone: str, name: str) -> str | None:
             json={
                 "extension": RAMAL,
                 "phone": phone,
-                "metadata": {"lead_name": name, "source": "discador_cloud"},
+                "metadata": {
+                    "lead_name": name,
+                    "source": "discador_cloud",
+                },
             },
             timeout=15
         )
@@ -342,11 +363,20 @@ def _originate(phone: str, name: str) -> str | None:
 
 
 def _wait_result(phone: str, name: str, call_id: str) -> str:
+    """
+    Espera o resultado final da chamada.
+    Regras:
+    - caixa postal / robô / URA curta -> voicemail
+    - inválido -> invalid
+    - não atendeu / ocupado / cancelada -> cancelled
+    - duração suficiente -> answered
+    """
     phone_fmt = _fmt_phone(phone)
 
     for _ in range(20):  # até ~100s
-        if not campaign["running"]:
-            return "cancelled"
+        with campaign_lock:
+            if not campaign["running"]:
+                return "cancelled"
 
         time.sleep(5)
 
@@ -357,25 +387,29 @@ def _wait_result(phone: str, name: str, call_id: str) -> str:
                 params={"page": 1},
                 timeout=10
             )
-            calls = r.json().get("data", [])
+
+            data = r.json()
+            calls = data.get("data", []) if isinstance(data, dict) else []
 
             for c in calls:
                 to_number = _fmt_phone(c.get("to", ""))
                 current_call_id = str(c.get("id") or c.get("call_id") or "")
 
-                # tenta casar por telefone e/ou por id
+                # tenta casar por telefone e/ou id
                 if to_number == phone_fmt or (call_id and current_call_id == call_id):
-                    cause = (c.get("hangup_cause") or "").upper()
+                    cause = (c.get("hangup_cause") or c.get("hangupCause") or "").upper().strip()
                     duration = int(c.get("duration") or 0)
 
-                    if duration > 0:
-                        return "answered"
-
-                    # se ainda estiver em andamento, continua esperando
-                    if not cause:
+                    # se ainda está em andamento, continua esperando
+                    if not cause and duration == 0:
                         continue
 
-                    return _cause_to_status(cause)
+                    status = _final_call_status(cause, duration)
+                    logger.info(
+                        f"Resultado chamada: lead={name} phone={phone_fmt} "
+                        f"call_id={call_id} cause={cause} duration={duration} status={status}"
+                    )
+                    return status
 
         except Exception as e:
             logger.warning(f"Erro consultando status da chamada {phone_fmt}: {e}")
@@ -383,29 +417,47 @@ def _wait_result(phone: str, name: str, call_id: str) -> str:
     return "cancelled"
 
 
-def _cause_to_status(cause: str) -> str:
-    mapping = {
-        # Inglês (via API)
-        "NORMAL_CLEARING": "answered",
-        "ORIGINATOR_CANCEL": "cancelled",
-        "NO_ANSWER": "cancelled",
-        "USER_BUSY": "cancelled",
-        "CALL_REJECTED": "cancelled",
-        "SUBSCRIBER_ABSENT": "cancelled",
-        "VOICEMAIL": "voicemail",
-        "UNALLOCATED_NUMBER": "invalid",
-        "INVALID_NUMBER_FORMAT": "invalid",
-        "USER_NOT_REGISTERED": "invalid",
+def _final_call_status(cause: str, duration: int) -> str:
+    cause_u = (cause or "").upper().strip()
 
-        # Português (painel Api4Com)
-        "ATENDIDA": "answered",
-        "CANCELADA": "cancelled",
-        "CAIXA POSTAL": "voicemail",
-        "NAO FOI POSSIVEL COMPLETAR": "invalid",
-        "NAO FOI POSSIVEL": "invalid",
-        "NUMERO INVALIDO": "invalid",
-    }
-    return mapping.get(cause.upper().strip(), "cancelled")
+    # inválidos
+    if cause_u in {
+        "UNALLOCATED_NUMBER",
+        "INVALID_NUMBER_FORMAT",
+        "USER_NOT_REGISTERED",
+        "NAO FOI POSSIVEL COMPLETAR",
+        "NAO FOI POSSIVEL",
+        "NUMERO INVALIDO",
+    }:
+        return "invalid"
+
+    # caixa postal / secretária / robô detectado pela operadora
+    if cause_u in {
+        "VOICEMAIL",
+        "CAIXA POSTAL",
+    }:
+        return "voicemail"
+
+    # não atendeu / ocupado / recusou / cancelada
+    if cause_u in {
+        "ORIGINATOR_CANCEL",
+        "NO_ANSWER",
+        "USER_BUSY",
+        "CALL_REJECTED",
+        "SUBSCRIBER_ABSENT",
+        "CANCELADA",
+    }:
+        return "cancelled"
+
+    # se durou pouco demais, tende a ser robô/ura/caixa
+    if duration > 0 and duration < MIN_HUMAN_DURATION:
+        return "voicemail"
+
+    # se teve duração suficiente, assume humano
+    if duration >= MIN_HUMAN_DURATION:
+        return "answered"
+
+    return "cancelled"
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -430,7 +482,7 @@ def _update_result(name, phone, status):
 
 def _fmt_phone(raw: str) -> str:
     import re
-    d = re.sub(r"\D", "", raw)
+    d = re.sub(r"\D", "", str(raw or ""))
     if d.startswith("55") and len(d) > 11:
         d = d[2:]
     if len(d) == 12 and d.startswith("0"):
@@ -439,7 +491,8 @@ def _fmt_phone(raw: str) -> str:
 
 
 def _norm(col: str) -> str:
-    import unicodedata, re
+    import unicodedata
+    import re
     col = unicodedata.normalize("NFKD", str(col).strip().lower())
     col = "".join(c for c in col if not unicodedata.combining(c))
     return re.sub(r"\s+", "_", col)
@@ -450,12 +503,13 @@ def _parse_leads(df) -> list:
 
     NAME_COLS = ["nome", "name", "contato", "cliente"]
     PHONE_COLS = [
-        "fone1", "fone2", "fone3", "fone4", "fone5",
-        "telefone1", "telefone2", "telefone3", "telefone4", "telefone5",
-        "telefone", "celular", "tel1", "tel2", "tel3", "phone"
+        "fone1", "fone2", "fone3", "fone4", "fone5", "fone6", "fone7", "fone8",
+        "telefone1", "telefone2", "telefone3", "telefone4", "telefone5", "telefone6", "telefone7", "telefone8",
+        "telefone", "celular", "tel1", "tel2", "tel3", "tel4", "tel5", "tel6", "tel7", "tel8", "phone"
     ]
 
     leads = []
+
     for idx, row in df.iterrows():
         name = next(
             (
@@ -463,7 +517,7 @@ def _parse_leads(df) -> list:
                 for c in NAME_COLS
                 if c in row and pd.notna(row[c]) and str(row[c]).strip()
             ),
-            f"Lead {idx+1}"
+            f"Lead {idx + 1}"
         )
 
         phones = []
@@ -478,6 +532,7 @@ def _parse_leads(df) -> list:
                 d = d[2:]
             if len(d) == 12 and d.startswith("0"):
                 d = d[1:]
+
             if 10 <= len(d) <= 11 and d not in phones:
                 phones.append(d)
 
@@ -485,7 +540,7 @@ def _parse_leads(df) -> list:
             leads.append({
                 "name": name,
                 "phones": phones,
-                "done": False
+                "done": False,
             })
 
     return leads
