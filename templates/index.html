@@ -18,6 +18,7 @@
   --purple:   #a78bfa;
   --red:      #ef4444;
   --orange:   #f97316;
+  --yellow:   #eab308;
 }
 
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -29,7 +30,6 @@ body {
   min-height: 100vh;
 }
 
-/* ── Header ── */
 .header {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -43,19 +43,10 @@ body {
   z-index: 100;
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+.header-left { display:flex; align-items:center; gap:12px; }
 
-.logo {
-  font-size: 1.1rem;
-  font-weight: 700;
-  letter-spacing: -.02em;
-}
-
-.logo span { color: var(--green); }
+.logo { font-size:1.1rem; font-weight:700; letter-spacing:-.02em; }
+.logo span { color:var(--green); }
 
 .badge {
   background: var(--border);
@@ -66,24 +57,19 @@ body {
 }
 
 .status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--muted);
+  width:8px; height:8px;
+  border-radius:50%;
+  background:var(--muted);
 }
 
 .status-dot.online {
-  background: var(--green);
-  box-shadow: 0 0 8px var(--green);
-  animation: pulse 2s infinite;
+  background:var(--green);
+  box-shadow:0 0 8px var(--green);
+  animation:pulse 2s infinite;
 }
 
-@keyframes pulse {
-  0%,100% { opacity:1 }
-  50% { opacity:.3 }
-}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-/* ── Layout ── */
 .main {
   padding: 28px 32px;
   max-width: 1200px;
@@ -91,16 +77,13 @@ body {
 }
 
 .grid-2 {
-  display: grid;
-  grid-template-columns: 360px 1fr;
-  gap: 20px;
+  display:grid;
+  grid-template-columns: 380px 1fr;
+  gap:20px;
 }
 
-@media(max-width:900px) {
-  .grid-2 { grid-template-columns: 1fr; }
-}
+@media(max-width:900px) { .grid-2 { grid-template-columns:1fr; } }
 
-/* ── Cards ── */
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -109,164 +92,124 @@ body {
 }
 
 .card-title {
-  font-size: .7rem;
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  color: var(--muted);
-  margin-bottom: 16px;
+  font-size:.7rem;
+  text-transform:uppercase;
+  letter-spacing:.1em;
+  color:var(--muted);
+  margin-bottom:16px;
 }
 
-/* ── Upload ── */
+/* Upload */
 .upload-zone {
-  border: 2px dashed var(--border);
-  border-radius: 8px;
-  padding: 32px 16px;
-  text-align: center;
-  cursor: pointer;
-  transition: .2s;
+  border:2px dashed var(--border);
+  border-radius:8px;
+  padding:32px 16px;
+  text-align:center;
+  cursor:pointer;
+  transition:.2s;
 }
-
-.upload-zone:hover,
-.upload-zone.drag {
-  border-color: var(--blue);
-  background: rgba(59,130,246,.05);
+.upload-zone:hover, .upload-zone.drag {
+  border-color:var(--blue);
+  background:rgba(59,130,246,.05);
 }
-
-.upload-zone .icon {
-  font-size: 2rem;
-  margin-bottom: 8px;
-}
-
-.upload-zone p {
-  color: var(--muted);
-  font-size: .85rem;
-  margin-top: 4px;
-}
-
-.upload-zone strong { color: var(--text); }
-
-#fileInput { display: none; }
+.upload-zone .icon { font-size:2rem; margin-bottom:8px; }
+.upload-zone p { color:var(--muted); font-size:.85rem; margin-top:4px; }
+.upload-zone strong { color:var(--text); }
+#fileInput { display:none; }
 
 .file-info {
-  display: none;
-  background: rgba(34,197,94,.08);
-  border: 1px solid rgba(34,197,94,.2);
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-top: 12px;
-  font-size: .85rem;
+  display:none;
+  background:rgba(34,197,94,.08);
+  border:1px solid rgba(34,197,94,.2);
+  border-radius:8px;
+  padding:12px 16px;
+  margin-top:12px;
+  font-size:.85rem;
 }
+.file-info .fname { font-weight:600; color:var(--green); word-break:break-word; }
+.file-info .fcount { color:var(--muted); margin-top:2px; }
 
-.file-info .fname {
-  font-weight: 600;
-  color: var(--green);
-  word-break: break-word;
-}
-
-.file-info .fcount {
-  color: var(--muted);
-  margin-top: 2px;
-}
-
-/* ── Controles ── */
+/* Controls */
 .control-box {
-  margin-top: 14px;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: rgba(255,255,255,.02);
+  margin-top:14px;
+  padding:12px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:rgba(255,255,255,.02);
 }
-
-.control-label {
-  font-size: .78rem;
-  color: var(--muted);
-  margin-bottom: 8px;
-}
+.control-label { font-size:.78rem; color:var(--muted); margin-bottom:8px; }
 
 .range-row {
   display:flex;
   align-items:center;
   gap:10px;
+  margin-bottom:10px;
 }
-
-.range-row input[type=range] {
-  flex:1;
-  accent-color: var(--blue);
-}
-
+.range-row:last-child { margin-bottom:0; }
+.range-row input[type=range] { flex:1; accent-color:var(--blue); }
 .range-row .val {
   font-size:.85rem;
   font-weight:600;
   color:var(--blue);
-  min-width:40px;
+  min-width:46px;
   text-align:right;
 }
+.range-row .lbl {
+  font-size:.75rem;
+  color:var(--muted);
+  min-width:130px;
+}
 
-/* ── Botões ── */
+/* Buttons */
 .btn {
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 8px;
-  font-size: .9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: .15s;
-  margin-top: 10px;
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:8px;
+  font-size:.9rem;
+  font-weight:600;
+  cursor:pointer;
+  transition:.15s;
+  margin-top:8px;
 }
 
-.btn-green  { background: var(--green); color: #000; }
-.btn-green:hover { background: #16a34a; }
+.btn-green  { background:var(--green); color:#000; }
+.btn-green:hover { background:#16a34a; }
 
-.btn-red    { background: #7f1d1d; color: #fca5a5; }
-.btn-red:hover { background: #991b1b; }
+.btn-red    { background:#7f1d1d; color:#fca5a5; }
+.btn-red:hover { background:#991b1b; }
 
-.btn-blue   { background: #1e3a5f; color: #93c5fd; }
-.btn-blue:hover { background: #1e40af; }
+.btn-blue   { background:#1e3a5f; color:#93c5fd; }
+.btn-blue:hover { background:#1e40af; }
 
-.btn:disabled {
-  opacity: .4;
-  cursor: not-allowed;
-}
+.btn-yellow { background:#422006; color:#fde047; }
+.btn-yellow:hover { background:#713f12; }
 
-/* ── Alert de atendimento ── */
+.btn-gray   { background:#1f2937; color:var(--muted); }
+.btn-gray:hover { background:#374151; color:var(--text); }
+
+.btn:disabled { opacity:.4; cursor:not-allowed; }
+
+/* Alert de atendimento */
 .alert-answered {
-  display: none;
-  background: var(--green-bg);
-  border: 2px solid var(--green);
-  border-radius: 12px;
-  padding: 24px 28px;
-  margin-bottom: 20px;
-  animation: fadeIn .4s;
+  display:none;
+  background:var(--green-bg);
+  border:2px solid var(--green);
+  border-radius:12px;
+  padding:24px 28px;
+  margin-bottom:20px;
+  animation:fadeIn .4s;
 }
-
-.alert-answered.show { display: block; }
+.alert-answered.show { display:block; }
 
 @keyframes fadeIn {
-  from { opacity:0; transform:translateY(-8px) }
-  to   { opacity:1; transform:none }
+  from{opacity:0;transform:translateY(-8px)}
+  to{opacity:1;transform:none}
 }
 
-.alert-answered .a-label {
-  font-size:.7rem;
-  text-transform:uppercase;
-  letter-spacing:.1em;
-  color:#16a34a;
-}
-
-.alert-answered .a-name {
-  font-size:1.8rem;
-  font-weight:800;
-  color:var(--green);
-  margin: 4px 0;
-}
-
-.alert-answered .a-phone {
-  color:#86efac;
-  font-size:1rem;
-  font-family:monospace;
-}
-
+.alert-answered .a-label { font-size:.7rem; text-transform:uppercase; letter-spacing:.1em; color:#16a34a; }
+.alert-answered .a-name  { font-size:1.8rem; font-weight:800; color:var(--green); margin:4px 0; }
+.alert-answered .a-phone { color:#86efac; font-size:1rem; font-family:monospace; }
 .alert-answered .a-ramal {
   display:inline-block;
   background:#166534;
@@ -277,14 +220,13 @@ body {
   margin-top:10px;
 }
 
-/* ── Stats ── */
+/* Stats */
 .stats-row {
   display:grid;
   grid-template-columns:repeat(4,1fr);
   gap:10px;
   margin-bottom:20px;
 }
-
 .stat-card {
   background:var(--surface);
   border:1px solid var(--border);
@@ -292,24 +234,14 @@ body {
   padding:14px;
   text-align:center;
 }
-
-.stat-card .sv {
-  font-size:1.6rem;
-  font-weight:700;
-}
-
-.stat-card .sl {
-  font-size:.7rem;
-  color:var(--muted);
-  margin-top:2px;
-}
-
-.stat-card.green .sv { color:var(--green); }
-.stat-card.blue .sv  { color:var(--blue); }
+.stat-card .sv { font-size:1.6rem; font-weight:700; }
+.stat-card .sl { font-size:.7rem; color:var(--muted); margin-top:2px; }
+.stat-card.green  .sv { color:var(--green); }
+.stat-card.blue   .sv { color:var(--blue); }
 .stat-card.purple .sv { color:var(--purple); }
-.stat-card.gray .sv  { color:var(--muted); }
+.stat-card.gray   .sv { color:var(--muted); }
 
-/* ── Status badge ── */
+/* Status bar */
 .status-bar {
   display:flex;
   align-items:center;
@@ -320,24 +252,18 @@ body {
   margin-bottom:16px;
   font-size:.85rem;
 }
-
 .status-bar .s-icon { font-size:1.1rem; }
 .status-bar .s-text { color:var(--muted); }
 .status-bar .s-lead { font-weight:600; color:var(--text); }
-
 .status-bar.discando { border-left:3px solid var(--blue); }
 .status-bar.atendido { border-left:3px solid var(--green); background:var(--green-bg); }
 .status-bar.pausado  { border-left:3px solid var(--orange); }
 .status-bar.error    { border-left:3px solid var(--red); }
 
-/* ── Tabela ── */
+/* Table */
 .table-wrap { overflow-x:auto; }
 
-table {
-  width:100%;
-  border-collapse:collapse;
-  font-size:.82rem;
-}
+table { width:100%; border-collapse:collapse; font-size:.82rem; }
 
 th {
   text-align:left;
@@ -349,19 +275,13 @@ th {
   text-transform:uppercase;
   letter-spacing:.05em;
 }
-
 td {
   padding:10px 12px;
   border-bottom:1px solid rgba(31,41,55,.6);
 }
-
 tr:last-child td { border-bottom:none; }
 
-.empty-row td {
-  color:var(--muted);
-  text-align:center;
-  padding:32px;
-}
+.empty-row td { color:var(--muted); text-align:center; padding:32px; }
 
 .tag {
   display:inline-block;
@@ -372,17 +292,16 @@ tr:last-child td { border-bottom:none; }
   text-transform:uppercase;
   letter-spacing:.04em;
 }
-
 .tag-answered  { background:rgba(34,197,94,.12);  color:var(--green); }
 .tag-cancelled { background:rgba(107,114,128,.15); color:var(--muted); }
 .tag-voicemail { background:rgba(167,139,250,.12); color:var(--purple); }
 .tag-invalid   { background:rgba(239,68,68,.12);   color:var(--red); }
 .tag-error     { background:rgba(249,115,22,.12);  color:var(--orange); }
 .tag-discando  { background:rgba(59,130,246,.12);  color:var(--blue); }
+.tag-skipped   { background:rgba(234,179,8,.12);   color:var(--yellow); }
 
-/* ── Progress ── */
+/* Progress */
 .progress-wrap { margin-bottom:16px; }
-
 .progress-label {
   display:flex;
   justify-content:space-between;
@@ -390,22 +309,10 @@ tr:last-child td { border-bottom:none; }
   color:var(--muted);
   margin-bottom:6px;
 }
+.progress-bar { height:4px; background:var(--border); border-radius:4px; overflow:hidden; }
+.progress-fill { height:100%; background:var(--blue); border-radius:4px; transition:width .5s; }
 
-.progress-bar {
-  height:4px;
-  background:var(--border);
-  border-radius:4px;
-  overflow:hidden;
-}
-
-.progress-fill {
-  height:100%;
-  background:var(--blue);
-  border-radius:4px;
-  transition:width .5s;
-}
-
-/* ── Current dialing ── */
+/* Dialing chips */
 .dialing-list {
   display:flex;
   flex-wrap:wrap;
@@ -413,7 +320,6 @@ tr:last-child td { border-bottom:none; }
   margin-bottom:16px;
   min-height:28px;
 }
-
 .dialing-chip {
   background:rgba(59,130,246,.12);
   border:1px solid rgba(59,130,246,.2);
@@ -421,13 +327,20 @@ tr:last-child td { border-bottom:none; }
   padding:3px 10px;
   border-radius:20px;
   font-size:.78rem;
-  animation: chipIn .2s;
+  animation:chipIn .2s;
+}
+@keyframes chipIn {
+  from{opacity:0;transform:scale(.9)}
+  to{opacity:1;transform:none}
 }
 
-@keyframes chipIn {
-  from { opacity:0; transform:scale(.9) }
-  to   { opacity:1; transform:none }
+/* Button group */
+.btn-group {
+  display:flex;
+  gap:8px;
+  margin-top:8px;
 }
+.btn-group .btn { margin-top:0; }
 </style>
 </head>
 <body>
@@ -437,12 +350,13 @@ tr:last-child td { border-bottom:none; }
     <div class="status-dot" id="onlineDot"></div>
     <div class="logo">Discador <span>Api4Com</span></div>
     <span class="badge">Ramal {{ ramal }}</span>
-    <span class="badge">Modo sequencial</span>
+    <span class="badge">Sequencial</span>
   </div>
   <span class="badge" id="headerStatus">Aguardando</span>
 </div>
 
 <div class="main">
+
   <div class="alert-answered" id="alertAnswered">
     <div class="a-label">✅ Chamada Atendida</div>
     <div class="a-name" id="alertName">—</div>
@@ -451,6 +365,8 @@ tr:last-child td { border-bottom:none; }
   </div>
 
   <div class="grid-2">
+
+    <!-- ── Coluna esquerda ── -->
     <div>
       <div class="card">
         <div class="card-title">Lista de leads</div>
@@ -461,7 +377,6 @@ tr:last-child td { border-bottom:none; }
           <p>ou arraste seu arquivo aqui</p>
           <p style="margin-top:8px;font-size:.75rem;">CSV ou Excel (.xlsx / .xls)</p>
         </div>
-
         <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
 
         <div class="file-info" id="fileInfo">
@@ -469,35 +384,60 @@ tr:last-child td { border-bottom:none; }
           <div class="fcount" id="fileCount">—</div>
         </div>
 
-        <div class="control-box">
-          <div class="control-label">Tempo entre uma ligação e outra</div>
+        <div class="control-box" style="margin-top:14px;">
+          <div class="control-label">Configurações de discagem</div>
+
           <div class="range-row">
-            <input
-              type="range"
-              id="callDelay"
-              min="0"
-              max="3"
-              step="0.1"
-              value="0.5"
-              oninput="document.getElementById('callDelayVal').textContent = Number(this.value).toFixed(1) + 's'">
+            <span class="lbl">Delay entre ligações</span>
+            <input type="range" id="callDelay" min="0" max="5" step="0.1" value="0.5"
+              oninput="document.getElementById('callDelayVal').textContent=Number(this.value).toFixed(1)+'s'">
             <span class="val" id="callDelayVal">0.5s</span>
+          </div>
+
+          <div class="range-row">
+            <span class="lbl">Mín. p/ humano (seg)</span>
+            <input type="range" id="minHuman" min="3" max="30" step="1" value="8"
+              oninput="document.getElementById('minHumanVal').textContent=this.value+'s'">
+            <span class="val" id="minHumanVal">8s</span>
+          </div>
+
+          <div class="range-row">
+            <span class="lbl">Timeout da chamada</span>
+            <input type="range" id="callTimeout" min="15" max="90" step="5" value="45"
+              oninput="document.getElementById('callTimeoutVal').textContent=this.value+'s'">
+            <span class="val" id="callTimeoutVal">45s</span>
+          </div>
+
+          <div class="range-row">
+            <span class="lbl">Intervalo de polling</span>
+            <input type="range" id="pollInterval" min="0.5" max="5" step="0.5" value="1.5"
+              oninput="document.getElementById('pollIntervalVal').textContent=Number(this.value).toFixed(1)+'s'">
+            <span class="val" id="pollIntervalVal">1.5s</span>
           </div>
         </div>
 
+        <!-- Botão iniciar -->
         <button class="btn btn-green" id="btnStart" onclick="startCampaign()" disabled>
           ▶ Iniciar discagem
         </button>
 
+        <!-- Botões ativos -->
+        <div class="btn-group" id="activeButtons" style="display:none">
+          <button class="btn btn-red" id="btnStop" onclick="stopCampaign()" style="flex:1">
+            ■ Parar
+          </button>
+          <button class="btn btn-yellow" id="btnSkip" onclick="skipCurrent()" style="flex:1">
+            ⏭ Pular lead
+          </button>
+        </div>
+
         <button class="btn btn-blue" id="btnResume" onclick="resumeCampaign()" style="display:none">
           ▶ Retomar após atendimento
-        </button>
-
-        <button class="btn btn-red" id="btnStop" onclick="stopCampaign()" style="display:none">
-          ■ Parar campanha
         </button>
       </div>
     </div>
 
+    <!-- ── Coluna direita ── -->
     <div>
       <div class="stats-row">
         <div class="stat-card green">
@@ -554,6 +494,7 @@ tr:last-child td { border-bottom:none; }
         </div>
       </div>
     </div>
+
   </div>
 </div>
 
@@ -579,106 +520,67 @@ function stopFlash() {
 function setStatusBar(type, icon, text, lead = '') {
   const bar = document.getElementById('statusBar');
   bar.className = 'status-bar ' + type;
-
-  if (lead) {
-    bar.innerHTML = `
-      <span class="s-icon">${icon}</span>
-      <span class="s-text">${text}</span>
-      <span class="s-lead">${lead}</span>
-    `;
-  } else {
-    bar.innerHTML = `
-      <span class="s-icon">${icon}</span>
-      <span class="s-text">${text}</span>
-    `;
-  }
+  bar.innerHTML = lead
+    ? `<span class="s-icon">${icon}</span><span class="s-text">${text}</span><span class="s-lead">${escapeHtml(lead)}</span>`
+    : `<span class="s-icon">${icon}</span><span class="s-text">${text}</span>`;
 }
 
-// ── Upload ────────────────────────────────────────────────────────────────────
+// ── Upload ─────────────────────────────────────────────────────────────────
 const zone = document.getElementById('uploadZone');
-
-zone.addEventListener('dragover', e => {
-  e.preventDefault();
-  zone.classList.add('drag');
-});
-
+zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag'); });
 zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
-
 zone.addEventListener('drop', e => {
   e.preventDefault();
   zone.classList.remove('drag');
   handleFile(e.dataTransfer.files[0]);
 });
-
-document.getElementById('fileInput').addEventListener('change', e => {
-  handleFile(e.target.files[0]);
-});
+document.getElementById('fileInput').addEventListener('change', e => handleFile(e.target.files[0]));
 
 async function handleFile(file) {
   if (!file) return;
-
   const fd = new FormData();
   fd.append('file', file);
-
   zone.innerHTML = '<div class="icon">⏳</div><strong>Processando...</strong>';
 
   try {
-    const r = await fetch('/api/upload', {
-      method: 'POST',
-      body: fd
-    });
-
+    const r    = await fetch('/api/upload', { method: 'POST', body: fd });
     const data = await r.json();
-
-    if (!r.ok || data.error) {
-      throw new Error(data.error || 'Falha ao processar arquivo');
-    }
+    if (!r.ok || data.error) throw new Error(data.error || 'Falha ao processar arquivo');
 
     zone.innerHTML = '<div class="icon">✅</div><strong>Arquivo carregado</strong><p>Clique para trocar</p>';
-    document.getElementById('fileInfo').style.display = 'block';
-    document.getElementById('fileName').textContent = file.name;
-    document.getElementById('fileCount').textContent = `${data.total ?? 0} leads encontrados`;
-    document.getElementById('btnStart').disabled = (data.total ?? 0) <= 0;
+    document.getElementById('fileInfo').style.display  = 'block';
+    document.getElementById('fileName').textContent    = file.name;
+    document.getElementById('fileCount').textContent   = `${data.total ?? 0} leads encontrados`;
+    document.getElementById('btnStart').disabled       = (data.total ?? 0) <= 0;
 
-    if ((data.total ?? 0) > 0) {
-      setStatusBar('aguardando', '📋', 'Lista carregada. Pronto para iniciar.');
-    } else {
-      setStatusBar('error', '⚠️', 'Arquivo enviado, mas nenhum lead foi encontrado.');
-    }
-
-    console.log('UPLOAD RESPONSE:', data);
+    setStatusBar('', '📋', `Lista carregada — ${data.total} leads. Pronto para iniciar.`);
   } catch (err) {
     zone.innerHTML = `<div class="icon">❌</div><strong>Erro ao processar</strong><p>${err.message}</p>`;
     document.getElementById('fileInfo').style.display = 'none';
-    document.getElementById('btnStart').disabled = true;
+    document.getElementById('btnStart').disabled      = true;
     setStatusBar('error', '⚠️', err.message || 'Falha ao enviar arquivo');
   }
 }
 
-// ── Controles ─────────────────────────────────────────────────────────────────
+// ── Controles ──────────────────────────────────────────────────────────────
 async function startCampaign() {
-  const callDelay = parseFloat(document.getElementById('callDelay').value || '0.5');
+  const payload = {
+    call_delay:         parseFloat(document.getElementById('callDelay').value),
+    min_human_duration: parseInt(document.getElementById('minHuman').value),
+    call_timeout:       parseInt(document.getElementById('callTimeout').value),
+    poll_interval:      parseFloat(document.getElementById('pollInterval').value),
+  };
 
   try {
-    const r = await fetch('/api/start', {
+    const r    = await fetch('/api/start', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        call_delay: callDelay
-      })
+      body: JSON.stringify(payload),
     });
-
     const data = await r.json();
+    if (!r.ok || data.error) throw new Error(data.error || 'Erro ao iniciar campanha');
 
-    if (!r.ok || data.error) {
-      throw new Error(data.error || 'Erro ao iniciar campanha');
-    }
-
-    document.getElementById('btnStart').style.display = 'none';
-    document.getElementById('btnStop').style.display = 'block';
-    document.getElementById('btnResume').style.display = 'none';
-    document.getElementById('progressWrap').style.display = 'block';
-
+    showActiveState();
     setStatusBar('discando', '📞', 'Discando automaticamente...');
     startPolling();
   } catch (err) {
@@ -687,27 +589,19 @@ async function startCampaign() {
 }
 
 async function stopCampaign() {
-  try {
-    await fetch('/api/stop', { method: 'POST' });
-  } catch (e) {}
-
-  document.getElementById('btnStop').style.display = 'none';
-  document.getElementById('btnResume').style.display = 'none';
-  document.getElementById('btnStart').style.display = 'block';
+  try { await fetch('/api/stop', { method: 'POST' }); } catch(e) {}
+  showIdleState();
   document.getElementById('alertAnswered').classList.remove('show');
   stopFlash();
   lastAnswered = null;
-  setStatusBar('aguardando', '⏹', 'Campanha parada.');
+  setStatusBar('', '⏹', 'Campanha parada.');
 }
 
 async function resumeCampaign() {
   try {
-    const r = await fetch('/api/resume', { method: 'POST' });
+    const r    = await fetch('/api/resume', { method: 'POST' });
     const data = await r.json();
-
-    if (!r.ok || data.error) {
-      throw new Error(data.error || 'Erro ao retomar campanha');
-    }
+    if (!r.ok || data.error) throw new Error(data.error || 'Erro ao retomar');
 
     document.getElementById('btnResume').style.display = 'none';
     document.getElementById('alertAnswered').classList.remove('show');
@@ -715,14 +609,38 @@ async function resumeCampaign() {
     stopFlash();
     setStatusBar('discando', '📞', 'Retomando discagem...');
   } catch (err) {
-    setStatusBar('error', '⚠️', err.message || 'Erro ao retomar campanha');
+    setStatusBar('error', '⚠️', err.message || 'Erro ao retomar');
   }
 }
 
-// ── Polling ───────────────────────────────────────────────────────────────────
+async function skipCurrent() {
+  try {
+    const r    = await fetch('/api/skip', { method: 'POST' });
+    const data = await r.json();
+    if (!r.ok || data.error) throw new Error(data.error || 'Erro ao pular');
+    setStatusBar('discando', '⏭', 'Pulando para o próximo lead...');
+  } catch (err) {
+    setStatusBar('error', '⚠️', err.message || 'Erro ao pular lead');
+  }
+}
+
+function showActiveState() {
+  document.getElementById('btnStart').style.display        = 'none';
+  document.getElementById('activeButtons').style.display   = 'flex';
+  document.getElementById('btnResume').style.display       = 'none';
+  document.getElementById('progressWrap').style.display    = 'block';
+}
+
+function showIdleState() {
+  document.getElementById('btnStart').style.display        = 'block';
+  document.getElementById('activeButtons').style.display   = 'none';
+  document.getElementById('btnResume').style.display       = 'none';
+}
+
+// ── Polling ────────────────────────────────────────────────────────────────
 function startPolling() {
   if (pollInterval) clearInterval(pollInterval);
-  pollInterval = setInterval(poll, 3000);
+  pollInterval = setInterval(poll, 2500);
   poll();
 }
 
@@ -730,11 +648,7 @@ async function poll() {
   try {
     const r = await fetch('/api/state');
     const d = await r.json();
-
-    if (!r.ok || d.error) {
-      throw new Error(d.error || 'Falha ao consultar estado');
-    }
-
+    if (!r.ok || d.error) throw new Error(d.error || 'Erro ao consultar estado');
     updateUI(d);
   } catch (e) {
     setStatusBar('error', '⚠️', 'Sem conexão com o servidor');
@@ -742,97 +656,67 @@ async function poll() {
 }
 
 function updateUI(d) {
-  // Stats
   document.getElementById('statAnswered').textContent  = d.stats?.answered  || 0;
   document.getElementById('statCancelled').textContent = d.stats?.cancelled || 0;
   document.getElementById('statVoicemail').textContent = d.stats?.voicemail || 0;
   document.getElementById('statTotal').textContent     = d.stats?.total     || 0;
 
-  // Online dot
   const dot = document.getElementById('onlineDot');
   dot.className = 'status-dot ' + (d.status && d.status !== 'aguardando' ? 'online' : '');
 
-  // Header status
-  const labels = {
-    aguardando: 'Aguardando',
-    discando: 'Discando...',
-    atendido: 'Atendido!',
-    pausado: 'Pausado'
-  };
+  const labels = { aguardando:'Aguardando', discando:'Discando...', atendido:'Atendido!', pausado:'Pausado' };
   document.getElementById('headerStatus').textContent = labels[d.status] || d.status || 'Aguardando';
 
-  // Status bar
   if (d.status === 'discando') {
-    const currentLead = Array.isArray(d.current) && d.current.length ? ` ${d.current[0]}` : '';
-    setStatusBar('discando', '📞', currentLead ? 'Discando:' : 'Discando automaticamente...', currentLead.trim());
+    const lead = Array.isArray(d.current) && d.current.length ? d.current[0] : '';
+    setStatusBar('discando', '📞', lead ? 'Discando:' : 'Discando automaticamente...', lead);
   } else if (d.status === 'atendido') {
     setStatusBar('atendido', '✅', 'Atendido —', d.answered?.name || '');
   } else if (d.status === 'pausado') {
     setStatusBar('pausado', '⏸', 'Pausado — aguardando retomar');
   } else {
-    setStatusBar('aguardando', '⏳', 'Aguardando...');
+    setStatusBar('', '⏳', 'Aguardando...');
   }
 
-  // Progresso
   if ((d.total || 0) > 0) {
     document.getElementById('progressWrap').style.display = 'block';
-
     const done = (d.total || 0) - (d.remaining || 0);
-    const pct = d.total > 0 ? Math.round((done / d.total) * 100) : 0;
-
-    document.getElementById('progressText').textContent = `${done} / ${d.total}`;
-    document.getElementById('progressFill').style.width = pct + '%';
+    const pct  = d.total > 0 ? Math.round((done / d.total) * 100) : 0;
+    document.getElementById('progressText').textContent    = `${done} / ${d.total}`;
+    document.getElementById('progressFill').style.width    = pct + '%';
   }
 
-  // Discando agora
-  const dl = document.getElementById('dialingList');
-  dl.innerHTML = (d.current || []).map(n => `<div class="dialing-chip">📞 ${n}</div>`).join('');
+  document.getElementById('dialingList').innerHTML =
+    (d.current || []).map(n => `<div class="dialing-chip">📞 ${escapeHtml(n)}</div>`).join('');
 
   // Alerta de atendimento
   if (d.answered && d.answered.name !== lastAnswered) {
     lastAnswered = d.answered.name;
-    document.getElementById('alertName').textContent = d.answered.name || 'Lead';
+    document.getElementById('alertName').textContent  = d.answered.name  || 'Lead';
     document.getElementById('alertPhone').textContent = d.answered.phone || '—';
     document.getElementById('alertAnswered').classList.add('show');
     document.getElementById('btnResume').style.display = 'block';
-
-    function playAlert() {
-      const Ctx = window.AudioContext || window.webkitAudioContext;
-      if (!Ctx) return;
-
-      const ctx = new Ctx();
-      [0, 400, 800].forEach(delay => {
-        setTimeout(() => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.frequency.value = 880;
-          osc.type = 'sine';
-          gain.gain.setValueAtTime(1, ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-          osc.start(ctx.currentTime);
-          osc.stop(ctx.currentTime + 0.3);
-        }, delay);
-      });
-    }
-
-    try { playAlert(); } catch(e) {}
+    playAlert();
     flashTitle(d.answered.name);
   }
 
   // Botões conforme estado
   if (d.status === 'discando' || d.status === 'pausado' || d.status === 'atendido') {
-    document.getElementById('btnStart').style.display = 'none';
-    document.getElementById('btnStop').style.display = 'block';
+    document.getElementById('btnStart').style.display      = 'none';
+    document.getElementById('activeButtons').style.display = 'flex';
+    if (d.status === 'atendido' || d.status === 'pausado') {
+      document.getElementById('btnResume').style.display   = 'block';
+    }
   } else {
-    document.getElementById('btnStop').style.display = 'none';
-    document.getElementById('btnStart').style.display = 'block';
+    document.getElementById('btnStart').style.display      = 'block';
+    document.getElementById('activeButtons').style.display = 'none';
+    if (!d.answered) {
+      document.getElementById('btnResume').style.display   = 'none';
+    }
   }
 
   // Tabela
   const tbody = document.getElementById('callsTable');
-
   if (!d.results || d.results.length === 0) {
     tbody.innerHTML = '<tr class="empty-row"><td colspan="4">Nenhuma chamada ainda</td></tr>';
     return;
@@ -848,20 +732,36 @@ function updateUI(d) {
   `).join('');
 }
 
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
+function playAlert() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    [0, 400, 800].forEach(delay => {
+      setTimeout(() => {
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 880;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.3);
+      }, delay);
+    });
+  } catch(e) {}
 }
 
-function escapeClass(value) {
-  return String(value).replace(/[^a-zA-Z0-9_-]/g, '');
+function escapeHtml(v) {
+  return String(v)
+    .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
+    .replaceAll('"','&quot;').replaceAll("'",'&#039;');
 }
 
-// Inicia polling imediatamente
+function escapeClass(v) { return String(v).replace(/[^a-zA-Z0-9_-]/g,''); }
+
 startPolling();
 </script>
 </body>
